@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -383,30 +383,45 @@ namespace ALVR
             recenterButtonComboBox.Enabled = enableControllerCheckBox.Checked;
         }
 
+        private int ConnectWait = 0;
+
         //
         // Event handlers
         //
 
-        private void timer1_Tick(object sender, EventArgs e)
+        private async void timer1_Tick(object sender, EventArgs e)
         {
             socket.Update();
             UpdateClients();
             UpdateServerStatus();
+
+            if (ConnectWait > 0)
+                ConnectWait--;
+
+            if (chkAutoConnect.Checked && socket.status == ControlSocket.ServerStatus.CONNECTED 
+                && dataGridView1.Rows.Count > 0 && (string)dataGridView1.Rows[0].Cells[3].Value == "Connect"
+                && ConnectWait == 0)
+            {
+                ConnectWait = 5;
+                await Connect(0, true);
+            }
         }
 
         async private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (dataGridView1.Columns[e.ColumnIndex].Name == "Button")
-            {
-                string IPAddr = (string)dataGridView1.Rows[e.RowIndex].Cells[1].Value;
-                string version = (string)dataGridView1.Rows[e.RowIndex].Cells[3].Value;
-                if (version == "Wrong version")
-                {
+                await Connect(e.RowIndex);
+        }
+
+        private async Task Connect(int row = 0, bool silent = false)
+        {
+                string IPAddr = (string)dataGridView1.Rows[row].Cells[1].Value;
+                string version = (string)dataGridView1.Rows[row].Cells[3].Value;
+                if (version == "Wrong version" && !silent) {
                     MessageBox.Show("Please check the version of client and server and update both.");
                     return;
                 }
                 await socket.SendCommand("Connect " + IPAddr);
-            }
         }
 
         async private void metroButton3_Click(object sender, EventArgs e)
