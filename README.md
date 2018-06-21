@@ -88,6 +88,7 @@ ALVR requires any of the following devices:
     - If you can use adb, run `adb shell ping -c 5 (IP Address of PC)` then check success of ping
 - Bad streaming quality (sometimes stops, laggy or broken picture)
     - We will add the functionality to change streaming resolution and bitrate
+    - QOS Router gamestream packet priority guide here: https://www.reddit.com/r/theNvidiaShield/comments/2rkzgr/shield_portable_gamestream_tips_that_helped_out_a/
     - Connect with 5GHz 802.ac Wi-Fi or Connect wired LAN to headset
 - If you get "A key component of Steam VR isn't working properly" error
     - Check if the graphic driver is updated
@@ -105,6 +106,7 @@ ALVR requires any of the following devices:
 ## Future work
 
 - Support H.265 hevc encoding (currently H.264 only)
+- Better error correction for lost packets
 - Better installer
 
 ## Build
