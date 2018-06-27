@@ -41,56 +41,38 @@ ALVR requires any of the following devices:
 
 ### Install ALVR server for PC
 
-- Install SteamVR
-- Install vc\_redist.x64.exe from [here](https://www.microsoft.com/en-us/download/details.aspx?id=53840)
-- Download the zip from [Releases](https://github.com/polygraphene/ALVR/releases)
-- Extract the zip to any folder
-- Launch ALVR.exe
+1. Install SteamVR
+2. Download and install vc\_redist.x64.exe from [here](https://go.microsoft.com/fwlink/?LinkId=746572)
+3. Download zip from [Releases](https://github.com/polygraphene/ALVR/releases)
+4. Extract the zip to any folder
+5. (First run only) Make sure the ALVR driver is installed in Steam
+  * Use the driver_install.bat helper located in ALVR\driver to install the driver if your SteamVR installation is in the default C:\Program Files (x86)\Steam\steamapps\common\SteamVR location
+  * If SteamVR is installed in any other location, use `[SteamVR install dir]\bin\win32\vrpathreg.exe adddriver [drive-and-path-to-ALVR\driver]` or simply edit the driver_install.bat and driver_uninstall.bat to reflect the location of your SteamVR install directory.
+6. Launch ALVR.exe
 
 ### Install ALVR client for headset
 
 ### From Oculus Store
+
 - You can download ALVR Client from Oculus Store with key.
 - Open [the key distribution page](https://alvr-dist.appspot.com/) on your smartphone and follow the instruction.
 
-#### Download from GitHub for Gear VR (optional)
+### Install from apk
 
-- (Install apk from SideloadVR) Yet to be released. Please wait.
-- Get osig file from oculus website
-- Install [Apk Editor](https://play.google.com/store/apps/details?id=com.gmail.heagoo.apkeditor)
-- Download apk from [Releases](https://github.com/polygraphene/ALVR/releases)
-- Open apk and put osig file on assets folder
-- Build and install
-
-#### Download from GitHub for Oculus Go (optional)
-
-- Download apk from [Releases](https://github.com/polygraphene/ALVR/releases)
-- Install apk via adb
+- Check [Installation](https://github.com/polygraphene/ALVR/wiki/Installation).
 
 ## Usage
 
 - Launch ALVR.exe
 - Press "Start Server" button or launch VR game
-- SteamVR's small window will appear
+- SteamVR's small window will appear. You should see a headset icon in the SteamVR status window that looks like a green block with a bold S in the middle
 - Launch ALVR Client in your headset
 - IP Address of headset will appear in the server tab of ALVR.exe
 - Press "Connect" button
 
 ## Troubleshoot
 
-- "Server is down" is displayed on right top corner on ALVR.exe
-    - Retry execute driver\_install.bat on driver folder
-    - Terminate the process `vrserver.exe` on Task Manager
-- IP Address is not displayed on ALVR.exe
-    - It maybe a network issue
-    - Confirm that the headset and PC are connected in the same LAN
-    - Check the firewall settings (Permit UDP/9944 port)
-    - If you can use adb, run `adb shell ping -c 5 (IP Address of PC)` then check success of ping
-- Bad streaming quality (sometimes stops, laggy or broken picture)
-    - We will add the functionality to change streaming resolution and bitrate
-    - Connect with 5GHz 802.ac Wi-Fi or Connect wired LAN to headset
-- If you get "A key component of Steam VR isn't working properly" error
-    - Check if the graphic driver is updated
+- If you got some error, please check [Troubleshooting](https://github.com/polygraphene/ALVR/wiki/Troubleshooting)
 
 ## Uninstallation
 
@@ -105,6 +87,8 @@ ALVR requires any of the following devices:
 ## Future work
 
 - Support H.265 hevc encoding (currently H.264 only)
+- AMD support [#33](https://github.com/polygraphene/ALVR/issues/33)
+- Windows 7 support
 - Better installer
 
 ## Build

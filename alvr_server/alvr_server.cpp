@@ -543,6 +543,11 @@ public:
 			recentered.z,
 			&history.rotationMatrix);
 
+		Log("Rotation Matrix=(%f, %f, %f, %f) (%f, %f, %f, %f) (%f, %f, %f, %f)"
+			, history.rotationMatrix.m[0][0], history.rotationMatrix.m[0][1], history.rotationMatrix.m[0][2], history.rotationMatrix.m[0][3]
+			, history.rotationMatrix.m[1][0], history.rotationMatrix.m[1][1], history.rotationMatrix.m[1][2], history.rotationMatrix.m[1][3]
+			, history.rotationMatrix.m[2][0], history.rotationMatrix.m[2][1], history.rotationMatrix.m[2][2], history.rotationMatrix.m[2][3]);
+
 		m_poseMutex.Wait(INFINITE);
 		if (m_poseBuffer.size() == 0) {
 			m_poseBuffer.push_back(history);
@@ -718,7 +723,7 @@ public:
 				m_framePoseRotation.z = minIt->info.HeadPose_Pose_Orientation.z;
 				m_framePoseRotation.w = minIt->info.HeadPose_Pose_Orientation.w;
 
-				Log("Frame pose found. m_prevSubmitFrameIndex=%llu m_submitFrameIndex=%llu", m_prevSubmitFrameIndex, m_submitFrameIndex);
+				Log("Frame pose found. m_prevSubmitFrameIndex=%llu m_submitFrameIndex=%llu minDiff=%f", m_prevSubmitFrameIndex, m_submitFrameIndex, minDiff);
 			}
 			else {
 				m_submitFrameIndex = 0;
@@ -881,8 +886,12 @@ public:
 			debugText = buf;
 		}
 
+		uint64_t submitFrameIndex = m_submitFrameIndex + Settings::Instance().m_trackingFrameOffset;
+		Log("Fix frame index. FrameIndex=%llu Offset=%d New FrameIndex=%llu"
+			, m_submitFrameIndex, Settings::Instance().m_trackingFrameOffset, submitFrameIndex);
+
 		// Copy entire texture to staging so we can read the pixels to send to remote device.
-		m_pEncoder->CopyToStaging(pTexture, bounds, layerCount, m_recenterManager->IsRecentering(), presentationTime, m_submitFrameIndex, m_submitClientTime, debugText);
+		m_pEncoder->CopyToStaging(pTexture, bounds, layerCount, m_recenterManager->IsRecentering(), presentationTime, submitFrameIndex, m_submitClientTime, debugText);
 
 		m_pD3DRender->GetContext()->Flush();
 	}
@@ -1163,6 +1172,16 @@ public:
 			pose.vecPosition[1] = position.y;
 			pose.vecPosition[2] = position.z;
 
+			Log("GetPose: Rotation=(%f, %f, %f, %f) Position=(%f, %f, %f)",
+				pose.qRotation.x,
+				pose.qRotation.y,
+				pose.qRotation.z,
+				pose.qRotation.w,
+				pose.vecPosition[0],
+				pose.vecPosition[1],
+				pose.vecPosition[2]
+			);
+
 			// To disable time warp (or pose prediction), we dont set (set to zero) velocity and acceleration.
 
 			pose.poseTimeOffset = 0;
@@ -1248,6 +1267,9 @@ public:
 				}
 				else if (name == "causePacketLoss") {
 					Settings::Instance().m_causePacketLoss = atoi(args.substr(index + 1).c_str());
+				}
+				else if (name == "trackingFrameOffset") {
+					Settings::Instance().m_trackingFrameOffset = atoi(args.substr(index + 1).c_str());
 				}
 				else {
 					m_Listener->SendCommandResponse("NG\n");
@@ -1344,9 +1366,7 @@ public:
 	}
 
 	void OnPacketLoss(int32_t lostPacketCount) {
-		if (lostPacketCount > 0) {
-			m_CNvEncoder->OnPacketLoss();
-		}
+		m_CNvEncoder->OnPacketLoss();
 	}
 private:
 	bool m_added;
