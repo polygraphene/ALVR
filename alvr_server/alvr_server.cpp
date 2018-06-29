@@ -1108,7 +1108,8 @@ public:
 		if (Settings::Instance().m_enableSound) {
 			m_audioCapture = std::make_shared<AudioCapture>(m_Listener);
 			try {
-				m_audioCapture->Start(ToWstring(Settings::Instance().m_soundDevice));
+				//m_audioCapture->Start(ToWstring(Settings::Instance().m_soundDevice));
+				m_audioCapture->StartDeFaultAudioCapture();
 			}
 			catch (Exception e) {
 				FatalLog("Failed to start audio capture. %s", e.what());
