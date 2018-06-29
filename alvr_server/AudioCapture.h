@@ -206,6 +206,37 @@ public:
 		}
 	}
 
+	static std::wstring GetDefaultAudioDeviceName()
+	{
+		CoInitialize(NULL);
+		HRESULT hr = S_OK;
+		// get an enumerator
+		ComPtr<IMMDeviceEnumerator> pMMDeviceEnumerator;
+		hr = CoCreateInstance(
+			__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator),
+			(void**)&pMMDeviceEnumerator);
+
+		if (FAILED(hr)) {
+			throw MakeException("GetDefaultAudioDeviceName CoCreateInstance(IMMDeviceEnumerator)");
+		}
+		ComPtr<IMMDeviceCollection> pMMDeviceCollection;
+		// get all the active render endpoints
+		hr = pMMDeviceEnumerator->EnumAudioEndpoints(
+			eRender, DEVICE_STATE_ACTIVE, &pMMDeviceCollection
+		);
+		if (FAILED(hr)) {
+			throw MakeException("GetDefaultAudioDeviceName IMMDeviceEnumerator::EnumAudioEndpoints failed");
+		}
+		ComPtr<IMMDevice> pMMDevice;
+		pMMDeviceEnumerator->GetDefaultAudioEndpoint(EDataFlow::eRender, ERole::eConsole, &pMMDevice);
+		if (FAILED(hr)) {
+			throw MakeException("GetDefaultAudioDeviceName GetDefaultAudioEndpoint failed");
+		}
+		auto name = GetDeviceName(pMMDevice);
+		return name;
+	}
+
+
 	static std::wstring GetDeviceName(const ComPtr<IMMDevice> &pMMDevice) {
 		// open the property store on that device
 		ComPtr<IPropertyStore> pPropertyStore;
@@ -286,6 +317,12 @@ public:
 		if (!m_pMMDevice) {
 			throw MakeException("Could not find a device named %ls", deviceName.c_str());
 		}
+	}
+
+	void StartDeFaultAudioCapture()
+	{
+		std::wstring &deviceName = GetDefaultAudioDeviceName();
+		Start(deviceName);
 	}
 
 	void Start(const std::wstring &deviceName) {
