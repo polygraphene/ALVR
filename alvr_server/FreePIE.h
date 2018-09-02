@@ -38,6 +38,7 @@ public:
 		double input_controller_position[3];
 		double input_trackpad[2];
 		uint16_t inputControllerButtons;
+		double input_haptic_feedback[2][3];
 		uint16_t controllers;
 		uint32_t controllerButtons[2];
 		double head_orientation[3];
@@ -63,7 +64,7 @@ public:
 	}
 
 	void UpdateTrackingInfoByFreePIE(const TrackingInfo &info, vr::HmdQuaternion_t &head_orientation
-		, vr::HmdQuaternion_t &controller_orientation, const TrackingVector3 &head_position, const TrackingVector3 &controller_position) {
+		, vr::HmdQuaternion_t &controller_orientation, const TrackingVector3 &head_position, const TrackingVector3 &controller_position, double haptic_feedback[2][3]) {
 		m_mutex.Wait();
 
 		QuaternionToEulerAngle(head_orientation, m_p->input_head_orientation);
@@ -87,6 +88,14 @@ public:
 			| ((info.flags & TrackingInfo::FLAG_CONTROLLER_VOLUME_DOWN) ? ALVR_FREEPIE_INPUT_BUTTON_VOLUME_DOWN : 0);
 
 		m_p->message[ALVR_FREEPIE_MESSAGE_LENGTH - 1] = 0;
+
+		m_p->input_haptic_feedback[0][0] = haptic_feedback[0][0];
+		m_p->input_haptic_feedback[0][1] = haptic_feedback[0][1];
+		m_p->input_haptic_feedback[0][2] = haptic_feedback[0][2];
+		m_p->input_haptic_feedback[1][0] = haptic_feedback[1][0];
+		m_p->input_haptic_feedback[1][1] = haptic_feedback[1][1];
+		m_p->input_haptic_feedback[1][2] = haptic_feedback[1][2];
+
 		memcpy(&m_copy, m_p, sizeof(FreePIEFileMapping));
 
 		m_mutex.Release();

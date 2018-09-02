@@ -96,6 +96,13 @@ namespace ALVRFreePIE
                         global.input_trackpad[1] = reader.ReadDouble();
 
                         inputControllerButtons = reader.ReadUInt16();
+
+                        global.input_haptic_feedback[0][0] = reader.ReadDouble();
+                        global.input_haptic_feedback[0][1] = reader.ReadDouble();
+                        global.input_haptic_feedback[0][2] = reader.ReadDouble();
+                        global.input_haptic_feedback[1][0] = reader.ReadDouble();
+                        global.input_haptic_feedback[1][1] = reader.ReadDouble();
+                        global.input_haptic_feedback[1][2] = reader.ReadDouble();
                     }
                 }
 
@@ -124,7 +131,7 @@ namespace ALVRFreePIE
 
                     mappedStream.Write(BitConverter.GetBytes(flags), 0, sizeof(UInt32));
 
-                    mappedStream.Seek(sizeof(double) * 14 + sizeof(UInt16), SeekOrigin.Current);
+                    mappedStream.Seek(sizeof(double) * 14 + sizeof(UInt16) + sizeof(double) * 6, SeekOrigin.Current);
 
                     mappedStream.Write(BitConverter.GetBytes(global.two_controllers ? 2 : 1), 0, sizeof(UInt16));
 
@@ -310,5 +317,7 @@ namespace ALVRFreePIE
 
         public string message { get; set; } = "";
 
+        //Amplitude DurationSeconds Frequency
+        public double[][] input_haptic_feedback { get; set; } = { new double[3], new double[3] };
     }
 }

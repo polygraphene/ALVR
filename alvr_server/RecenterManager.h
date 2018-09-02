@@ -99,7 +99,25 @@ public:
 				, m_fixedOrientationController.z
 				, m_fixedOrientationController.w));
 
-		m_freePIE->UpdateTrackingInfoByFreePIE(info, m_fixedOrientationHMD, m_fixedOrientationController, m_fixedPositionHMD, m_fixedPositionController);
+		double  hapticFeedback[2][3]{ {0,0,0},{0,0,0} };
+		vr::VREvent_t vrEvent;
+
+		while (vr::VRServerDriverHost()->PollNextEvent(&vrEvent, sizeof(vrEvent)))
+		{
+			if (vrEvent.eventType == vr::VREvent_Input_HapticVibration)
+			{
+				for (int i = 0; i < 2; i++) {
+					if (m_remoteController[i] && m_remoteController[i]->IsMyHapticComponent(vrEvent.data.hapticVibration.componentHandle)) {
+						// if multiple events occurred within one frame, they are ignored except for last event
+						hapticFeedback[i][0] = vrEvent.data.hapticVibration.fAmplitude;
+						hapticFeedback[i][1] = vrEvent.data.hapticVibration.fDurationSeconds;
+						hapticFeedback[i][2] = vrEvent.data.hapticVibration.fFrequency;
+					}
+				}
+			}
+		}
+
+		m_freePIE->UpdateTrackingInfoByFreePIE(info, m_fixedOrientationHMD, m_fixedOrientationController, m_fixedPositionHMD, m_fixedPositionController, hapticFeedback);
 
 		auto data = m_freePIE->GetData();
 
