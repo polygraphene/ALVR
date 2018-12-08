@@ -1,6 +1,7 @@
 #pragma once
 
 #include <openvr_driver.h>
+#include "common-utils.h"
 #include "Utils.h"
 
 //
@@ -22,6 +23,8 @@ static const char * const k_pch_Settings_SoundDevice_String = "soundDevice";
 
 static const char * const k_pch_Settings_Codec_Int32 = "codec";
 static const char * const k_pch_Settings_EncoderOptions_String = "nvencOptions";
+static const char * const k_pch_Settings_EncodeFPS_Int32 = "encodeFPS";
+static const char * const k_pch_Settings_EncodeBitrateInMBits_Int32 = "encodeBitrateInMBits";
 static const char * const k_pch_Settings_DebugLog_Bool = "debugLog";
 static const char * const k_pch_Settings_DebugFrameIndex_Bool = "debugFrameIndex";
 static const char * const k_pch_Settings_DebugFrameOutput_Bool = "debugFrameOutput";
@@ -109,6 +112,8 @@ public:
 
 	int m_codec;
 	std::string m_EncoderOptions;
+	int m_encodeFPS;
+	int m_encodeBitrateInMBits;
 
 	std::string m_Host;
 	int m_Port;
@@ -150,5 +155,9 @@ public:
 	bool m_useTrackingReference;
 
 	int32_t m_trackingFrameOffset;
+
+	// They are not in config json and set by "SetConfig" command.
+	bool m_captureLayerDDSTrigger = false;
+	bool m_captureComposedDDSTrigger = false;
 };
 

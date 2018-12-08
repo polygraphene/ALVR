@@ -4,11 +4,10 @@
 #include <WinInet.h>
 #include <WS2tcpip.h>
 #include <Windows.h>
+#include <delayimp.h>
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include <locale>
-#include <codecvt>
 #include <d3d11.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -46,21 +45,21 @@ inline std::string DumpMatrix(const float *m) {
 	return std::string(buf);
 }
 
-inline std::string GetDxErrorStr(HRESULT hr) {
-	char *s = NULL;
-	std::string ret;
-	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+inline std::wstring GetDxErrorStr(HRESULT hr) {
+	wchar_t *s = NULL;
+	std::wstring ret;
+	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, hr,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPSTR)&s, 0, NULL);
+		(LPWSTR)&s, 0, NULL);
 	ret = s;
 	LocalFree(s);
 
 	if (ret.size() >= 1) {
-		if (ret[ret.size() - 1] == '\n') {
+		if (ret[ret.size() - 1] == L'\n') {
 			ret.erase(ret.size() - 1, 1);
 		}
-		if (ret[ret.size() - 1] == '\r') {
+		if (ret[ret.size() - 1] == L'\r') {
 			ret.erase(ret.size() - 1, 1);
 		}
 	}
@@ -287,20 +286,29 @@ inline bool ShouldUseNV12Texture() {
 	return IsWindows8OrGreater() == FALSE;
 }
 
+// Delay loading for Cuda driver API to correctly work on non-NVIDIA GPU.
+inline bool LoadCudaDLL() {
+	__try {
+		return !FAILED(__HrLoadAllImportsForDll("nvcuda.dll"));
+	} __except (EXCEPTION_EXECUTE_HANDLER) {
+	}
+	return false;
+}
+
 typedef void (WINAPI *RtlGetVersion_FUNC)(OSVERSIONINFOEXW*);
 
-inline std::string GetWindowsOSVersion() {
+inline std::wstring GetWindowsOSVersion() {
 	HMODULE hModule;
 	OSVERSIONINFOEXW ver;
 
-	hModule = LoadLibrary(TEXT("ntdll.dll"));
+	hModule = LoadLibraryW(L"ntdll.dll");
 	if (hModule == NULL) {
-		return "Unknown";
+		return L"Unknown";
 	}
 	RtlGetVersion_FUNC RtlGetVersion = (RtlGetVersion_FUNC)GetProcAddress(hModule, "RtlGetVersion");
 	if (RtlGetVersion == NULL) {
 		FreeLibrary(hModule);
-		return "Unknown";
+		return L"Unknown";
 	}
 	memset(&ver, 0, sizeof(ver));
 	ver.dwOSVersionInfoSize = sizeof(ver);
@@ -308,19 +316,8 @@ inline std::string GetWindowsOSVersion() {
 
 	FreeLibrary(hModule);
 
-	char buf[1000];
-	snprintf(buf, sizeof(buf), "MajorVersion=%d MinorVersion=%d Build=%d",
+	wchar_t buf[1000];
+	_snwprintf_s(buf, sizeof(buf) / sizeof(buf[0]), L"MajorVersion=%d MinorVersion=%d Build=%d",
 		ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber);
 	return buf;
-}
-
-inline std::wstring ToWstring(const std::string &src) {
-	// TODO: src is really UTF-8?
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	return converter.from_bytes(src);
-}
-
-inline std::string ToUTF8(const std::wstring &src) {
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	return converter.to_bytes(src);
 }
