@@ -12,7 +12,7 @@ namespace ALVR.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.7.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.9.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -20,18 +20,6 @@ namespace ALVR.Properties {
         public static Settings Default {
             get {
                 return defaultInstance;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2048")]
-        public int renderWidth {
-            get {
-                return ((int)(this["renderWidth"]));
-            }
-            set {
-                this["renderWidth"] = value;
             }
         }
         
@@ -164,18 +152,6 @@ namespace ALVR.Properties {
             }
             set {
                 this["debugCaptureOutput"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool UpgradeRequired {
-            get {
-                return ((bool)(this["UpgradeRequired"]));
-            }
-            set {
-                this["UpgradeRequired"] = value;
             }
         }
         
@@ -332,6 +308,53 @@ namespace ALVR.Properties {
             }
             set {
                 this["controllerBackMode"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool useDefaultSoundDevice {
+            get {
+                return ((bool)(this["useDefaultSoundDevice"]));
+            }
+            set {
+                this["useDefaultSoundDevice"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool force60Hz {
+            get {
+                return ((bool)(this["force60Hz"]));
+            }
+            set {
+                this["force60Hz"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public double[] eyeFov {
+            get {
+                return ((double[])(this["eyeFov"]));
+            }
+            set {
+                this["eyeFov"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public int resolutionScale {
+            get {
+                return ((int)(this["resolutionScale"]));
+            }
+            set {
+                this["resolutionScale"] = value;
             }
         }
     }

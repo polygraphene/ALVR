@@ -20,6 +20,7 @@ namespace ALVR
         {
             CONNECTING,
             CONNECTED,
+            SHUTTINGDOWN,
             DEAD
         };
         public ServerStatus status { get; private set; } = ServerStatus.DEAD;
@@ -40,7 +41,7 @@ namespace ALVR
             {
                 client.GetStream().Write(buffer, 0, buffer.Length);
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
             return await ReadNextMessage();
@@ -54,7 +55,7 @@ namespace ALVR
             {
                 ret = await client.GetStream().ReadAsync(buffer, 0, 1000);
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
             if (ret == 0 || ret < 0)
@@ -109,6 +110,12 @@ namespace ALVR
             {
                 status = ServerStatus.DEAD;
             }
+        }
+
+        async public void Shutdown()
+        {
+            status = ServerStatus.SHUTTINGDOWN;
+            await SendCommand("Shutdown");
         }
 
         public void Update()

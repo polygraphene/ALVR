@@ -1,6 +1,7 @@
 #pragma once
 
 #include <openvr_driver.h>
+#include "common-utils.h"
 #include "Utils.h"
 
 //
@@ -9,19 +10,23 @@
 static const char * const k_pch_Settings_Section = "driver_alvr_server";
 static const char * const k_pch_Settings_SerialNumber_String = "serialNumber";
 static const char * const k_pch_Settings_ModelNumber_String = "modelNumber";
+static const char * const k_pch_Settings_RefreshRate_Int32 = "refreshRate";
 static const char * const k_pch_Settings_RenderWidth_Int32 = "renderWidth";
 static const char * const k_pch_Settings_RenderHeight_Int32 = "renderHeight";
+static const char * const k_pch_Settings_EyeFov = "eyeFov";
 static const char * const k_pch_Settings_IPD_Float = "IPD";
 static const char * const k_pch_Settings_SecondsFromVsyncToPhotons_Float = "secondsFromVsyncToPhotons";
-static const char * const k_pch_Settings_DisplayFrequency_Float = "displayFrequency";
 static const char * const k_pch_Settings_ClientRecvBufferSize_Int32 = "clientRecvBufferSize";
 static const char * const k_pch_Settings_FrameQueueSize_Int32 = "frameQueueSize";
+
+static const char * const k_pch_Settings_Force60HZ_Bool = "force60HZ";
 
 static const char * const k_pch_Settings_EnableSound_Bool = "enableSound";
 static const char * const k_pch_Settings_SoundDevice_String = "soundDevice";
 
 static const char * const k_pch_Settings_Codec_Int32 = "codec";
 static const char * const k_pch_Settings_EncoderOptions_String = "nvencOptions";
+static const char * const k_pch_Settings_EncodeBitrateInMBits_Int32 = "encodeBitrateInMBits";
 static const char * const k_pch_Settings_DebugLog_Bool = "debugLog";
 static const char * const k_pch_Settings_DebugFrameIndex_Bool = "debugFrameIndex";
 static const char * const k_pch_Settings_DebugFrameOutput_Bool = "debugFrameOutput";
@@ -32,6 +37,8 @@ static const char * const k_pch_Settings_ListenHost_String = "listenHost";
 static const char * const k_pch_Settings_ListenPort_Int32 = "listenPort";
 static const char * const k_pch_Settings_ControlListenHost_String = "controlListenHost";
 static const char * const k_pch_Settings_ControlListenPort_Int32 = "controlListenPort";
+static const char * const k_pch_Settings_AutoConnectHost_String = "autoConnectHost";
+static const char * const k_pch_Settings_AutoConnectPort_Int32 = "autoConnectPort";
 
 static const char * const k_pch_Settings_AdapterIndex_Int32 = "adapterIndex";
 
@@ -41,8 +48,13 @@ static const char * const k_pch_Settings_LimitTimeslotPackets_Int32 = "limitTime
 static const char * const k_pch_Settings_ControllerTrackingSystemName_String = "controllerTrackingSystemName";
 static const char * const k_pch_Settings_ControllerManufacturerName_String = "controllerManufacturerName";
 static const char * const k_pch_Settings_ControllerModelNumber_String = "controllerModelNumber";
-static const char * const k_pch_Settings_ControllerRenderModelName_String = "controllerRenderModelName";
+static const char * const k_pch_Settings_ControllerRenderModelNameLeft_String = "controllerRenderModelNameLeft";
+static const char * const k_pch_Settings_ControllerRenderModelNameRight_String = "controllerRenderModelNameRight";
 static const char * const k_pch_Settings_ControllerSerialNumber_String = "controllerSerialNumber";
+static const char * const k_pch_Settings_ControllerType_String = "controllerType";
+static const char * const k_pch_Settings_ControllerLegacyInputProfile_String = "controllerLegacyInputProfile";
+static const char * const k_pch_Settings_ControllerInputProfilePath_String = "controllerInputProfilePath";
+
 static const char * const k_pch_Settings_EnableController_Bool = "enableController";
 static const char * const k_pch_Settings_ControllerTriggerMode_Int32 = "controllerTriggerMode";
 static const char * const k_pch_Settings_ControllerTrackpadClickMode_Int32 = "controllerTrackpadClickMode";
@@ -98,10 +110,11 @@ public:
 
 	int32_t m_nAdapterIndex;
 
+	int m_refreshRate;
 	int32_t m_renderWidth;
 	int32_t m_renderHeight;
+	EyeFov m_eyeFov[2];
 	float m_flSecondsFromVsyncToPhotons;
-	float m_flDisplayFrequency;
 	float m_flIPD;
 
 	bool m_enableSound;
@@ -109,11 +122,14 @@ public:
 
 	int m_codec;
 	std::string m_EncoderOptions;
+	int m_encodeBitrateInMBits;
 
 	std::string m_Host;
 	int m_Port;
 	std::string m_ControlHost;
 	int m_ControlPort;
+	std::string m_AutoConnectHost;
+	int m_AutoConnectPort;
 
 	bool m_DebugLog;
 	bool m_DebugFrameIndex;
@@ -129,12 +145,18 @@ public:
 
 	uint32_t m_frameQueueSize;
 
+	bool m_force60HZ;
+
 	// Controller configs
 	std::string m_controllerTrackingSystemName;
 	std::string m_controllerManufacturerName;
 	std::string m_controllerModelNumber;
-	std::string m_controllerRenderModelName;
+	std::string m_controllerRenderModelNameLeft;
+	std::string m_controllerRenderModelNameRight;
 	std::string m_controllerSerialNumber;
+	std::string m_controllerType;
+	std::string m_controllerLegacyInputProfile;
+	std::string m_controllerInputProfilePath;
 	bool m_enableController;
 	int32_t m_controllerTriggerMode;
 	int32_t m_controllerTrackpadClickMode;
@@ -150,5 +172,9 @@ public:
 	bool m_useTrackingReference;
 
 	int32_t m_trackingFrameOffset;
+
+	// They are not in config json and set by "SetConfig" command.
+	bool m_captureLayerDDSTrigger = false;
+	bool m_captureComposedDDSTrigger = false;
 };
 

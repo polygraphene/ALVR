@@ -2,9 +2,6 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="ALVR.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="renderWidth" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">2048</Value>
-    </Setting>
     <Setting Name="bitrate" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">30</Value>
     </Setting>
@@ -37,9 +34,6 @@
     </Setting>
     <Setting Name="debugCaptureOutput" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
-    </Setting>
-    <Setting Name="UpgradeRequired" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="useOffsetPos" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
@@ -79,6 +73,18 @@
     </Setting>
     <Setting Name="controllerBackMode" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="useDefaultSoundDevice" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="force60Hz" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="eyeFov" Type="System.Double[]" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="resolutionScale" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
     </Setting>
   </Settings>
 </SettingsFile>

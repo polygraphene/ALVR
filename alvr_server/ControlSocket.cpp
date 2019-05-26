@@ -1,5 +1,3 @@
-#include <WS2tcpip.h>
-
 #include "ControlSocket.h"
 #include "Logger.h"
 
@@ -23,7 +21,7 @@ bool ControlSocket::Startup() {
 
 	m_Socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (m_Socket == INVALID_SOCKET) {
-		FatalLog("ControlSocket::Startup socket error : %d", WSAGetLastError());
+		FatalLog(L"ControlSocket::Startup socket error : %d", WSAGetLastError());
 		return false;
 	}
 
@@ -37,16 +35,16 @@ bool ControlSocket::Startup() {
 	inet_pton(AF_INET, CONTROL_HOST, &addr.sin_addr);
 
 	if (bind(m_Socket, (sockaddr *)&addr, sizeof(addr))) {
-		FatalLog("ControlSocket::Startup bind error : %d", WSAGetLastError());
+		FatalLog(L"ControlSocket::Startup bind error : %d", WSAGetLastError());
 		return false;
 	}
 
 	if (listen(m_Socket, 10)) {
-		FatalLog("ControlSocket::Startup listen error : %d", WSAGetLastError());
+		FatalLog(L"ControlSocket::Startup listen error : %d", WSAGetLastError());
 		return false;
 	}
 
-	Log("ControlSocket::Startup Successfully bound to %s:%d", CONTROL_HOST, CONTROL_PORT);
+	Log(L"ControlSocket::Startup Successfully bound to %hs:%d", CONTROL_HOST, CONTROL_PORT);
 
 	m_Poller->AddSocket(m_Socket);
 
@@ -71,7 +69,7 @@ bool ControlSocket::Accept() {
 	}
 
 	if (m_ClientSocket != INVALID_SOCKET) {
-		Log("Closing old control client");
+		Log(L"Closing old control client");
 		m_Buf = "";
 		CloseClient();
 	}
@@ -90,13 +88,13 @@ bool ControlSocket::Recv(std::vector<std::string> &commands) {
 	char buf[1000];
 	int ret = recv(m_ClientSocket, buf, sizeof(buf) - 1, 0);
 	if (ret == 0) {
-		Log("Control connection has closed");
+		Log(L"Control connection has closed");
 		m_Buf = "";
 		CloseClient();
 		return false;
 	}
 	if (ret < 0) {
-		Log("Error on recv. close control client: %d", WSAGetLastError());
+		Log(L"Error on recv. close control client: %d", WSAGetLastError());
 		m_Buf = "";
 		CloseClient();
 		return false;
@@ -104,8 +102,8 @@ bool ControlSocket::Recv(std::vector<std::string> &commands) {
 	buf[ret] = 0;
 	m_Buf += buf;
 
-	int index;
-	while ((index = m_Buf.find("\n")) != -1) {
+	size_t index;
+	while ((index = m_Buf.find("\n")) != std::string::npos) {
 		commands.push_back(m_Buf.substr(0, index));
 		m_Buf.replace(0, index + 1, "");
 	}
@@ -134,6 +132,6 @@ void ControlSocket::SendCommandResponse(const char * commandResponse)
 {
 	if (m_ClientSocket != INVALID_SOCKET) {
 		// Send including NULL.
-		send(m_ClientSocket, commandResponse, strlen(commandResponse) + 1, 0);
+		send(m_ClientSocket, commandResponse, static_cast<int>(strlen(commandResponse)) + 1, 0);
 	}
 }

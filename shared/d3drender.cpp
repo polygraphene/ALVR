@@ -74,12 +74,12 @@ namespace
 		ID3D11Multithread *D3D11Multithread = NULL;
 		HRESULT hr = (*pD3D11Context)->QueryInterface(__uuidof(ID3D11Multithread), (void **)&D3D11Multithread);
 		if (SUCCEEDED(hr)) {
-			Log("Successfully get ID3D11Multithread interface. We set SetMultithreadProtected(TRUE)");
+			Log(L"Successfully get ID3D11Multithread interface. We set SetMultithreadProtected(TRUE)");
 			D3D11Multithread->SetMultithreadProtected(TRUE);
 			D3D11Multithread->Release();
 		}
 		else {
-			Log("Failed to get ID3D11Multithread interface. Ignore.");
+			Log(L"Failed to get ID3D11Multithread interface. Ignore.");
 		}
 
 		return true;
@@ -166,7 +166,7 @@ void CD3DRender::GetDisplaySize( uint32_t *pDisplayWidth, uint32_t *pDisplayHeig
 //--------------------------------------------------------------------------------------------------
 // Purpose: Return the DXGI index and name of the adapter currently in use.
 //--------------------------------------------------------------------------------------------------
-bool CD3DRender::GetAdapterInfo( int32_t *pAdapterIndex, wchar_t *pBuffer, uint32_t nBufferCount )
+bool CD3DRender::GetAdapterInfo( int32_t *pAdapterIndex, std::wstring &adapterName )
 {
 	if ( m_pD3D11Device == NULL )
 		return false;
@@ -197,8 +197,7 @@ bool CD3DRender::GetAdapterInfo( int32_t *pAdapterIndex, wchar_t *pBuffer, uint3
 						if ( pAdapterIndex )
 							*pAdapterIndex = nAdapterIndex;
 
-						if ( pBuffer && nBufferCount )
-							wcsncpy_s( pBuffer, nBufferCount, adapterDesc.Description, ARRAYSIZE( adapterDesc.Description ) );
+						adapterName = adapterDesc.Description;
 
 						bSuccess = true;
 						break;
