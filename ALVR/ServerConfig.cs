@@ -175,9 +175,9 @@ namespace ALVR
                     driverConfig.controllerTrackingSystemName = "oculus";
                     driverConfig.controllerManufacturerName = "Oculus";
                     driverConfig.controllerModelNumber = "Oculus Rift CV1";
-                    // Replace this with the correct render model for Quest
-                    driverConfig.controllerRenderModelNameLeft = "oculus_cv1_controller_left";
-                    driverConfig.controllerRenderModelNameRight = "oculus_cv1_controller_right";
+                    // Shows the quest controllers if the app hasnt replaced it with its own
+                    driverConfig.controllerRenderModelNameLeft = "{alvr_server}/models/oculus_cv1_controller_left";
+                    driverConfig.controllerRenderModelNameRight = "{alvr_server}/models/oculus_cv1_controller_right";
                     driverConfig.controllerSerialNumber = "WMHD000X000XXX_Controller";
                     driverConfig.controllerType = "oculus_touch";
                     driverConfig.controllerLegacyInputProfile = "oculus_touch";
