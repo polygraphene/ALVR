@@ -172,13 +172,13 @@ namespace ALVR
                 driverConfig.enableController = c.enableController;
                 if(device != null && device.HasTouchController)
                 {
-                    driverConfig.controllerTrackingSystemName = "ALVR Remote Controller";
-                    driverConfig.controllerManufacturerName = "ALVR";
-                    driverConfig.controllerModelNumber = "ALVR Remote Controller";
-                    // There is not render model for Oculus Touch.
+                    driverConfig.controllerTrackingSystemName = "oculus";
+                    driverConfig.controllerManufacturerName = "Oculus";
+                    driverConfig.controllerModelNumber = "Oculus Rift CV1";
+                    // Replace this with the correct render model for Quest
                     driverConfig.controllerRenderModelNameLeft = "oculus_cv1_controller_left";
                     driverConfig.controllerRenderModelNameRight = "oculus_cv1_controller_right";
-                    driverConfig.controllerSerialNumber = "ALVR Remote Controller";
+                    driverConfig.controllerSerialNumber = "WMHD000X000XXX_Controller";
                     driverConfig.controllerType = "oculus_touch";
                     driverConfig.controllerLegacyInputProfile = "oculus_touch";
                     driverConfig.controllerInputProfilePath = "{alvr_server}/input/touch_profile.json";
