@@ -13,12 +13,22 @@ public:
 	virtual vr::EVRInitError Activate(vr::TrackedDeviceIndex_t unObjectId)
 	{
 		Log(L"TrackingReference::Activate. objectId=%d", unObjectId);
+		mIsTouch = Settings::Instance().m_controllerType == "oculus_touch";
 
 		m_unObjectId = unObjectId;
 		m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer(m_unObjectId);
 
-		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ModelNumber_String, "TrackingReference-Model001");
 		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "TrackingReference-Model001");
+
+		if (mIsTouch) {
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_TrackingSystemName_String, "oculus");
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ManufacturerName_String, "Oculus");
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ModelNumber_String, "Oculus Rift CV1");
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_SerialNumber_String, "WMHD000X000XXX");
+		}
+		else {
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ModelNumber_String, "TrackingReference-Model001");
+		}
 
 		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_AttachedDeviceId_String, GetSerialNumber().c_str());
 
@@ -79,4 +89,6 @@ public:
 private:
 	vr::TrackedDeviceIndex_t m_unObjectId;
 	vr::PropertyContainerHandle_t m_ulPropertyContainer;
+
+	bool mIsTouch;
 };
