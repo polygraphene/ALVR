@@ -2,6 +2,9 @@
 
 ALVR is an open source remote VR display for Gear VR and Oculus Go/Quest. With it, you can play SteamVR games in your standalone headset.
 
+- [ALVR (Server)](https://github.com/polygraphene/ALVR) \(This repository\)
+- [ALVR Client](https://github.com/polygraphene/ALVRClient)
+
 English | [Japanese](https://github.com/polygraphene/ALVR/blob/master/README-ja.md)
 
 ## Description
