@@ -73,6 +73,39 @@ struct TrackingVector3 {
 	float x;
 	float y;
 	float z;
+
+	TrackingVector3()
+	{
+		x = 0;
+		y = 0;
+		z = 0;
+	}
+
+	TrackingVector3(float a, float b, float c)
+	{
+		x = a;
+		y = b;
+		z = c;
+	}
+
+	TrackingVector3 operator + (const TrackingVector3& otherVector)  const { return TrackingVector3(x + otherVector.x, y + otherVector.y, z + otherVector.z); }
+
+	TrackingVector3 operator - (const TrackingVector3& otherVector)  const { return TrackingVector3(x - otherVector.x, y - otherVector.y, z - otherVector.z); }
+
+	TrackingVector3 operator * (const float& scale)  const { return TrackingVector3(x * scale, y * scale, z * scale); }
+
+	TrackingVector3 operator / (const float& scale)  const { return TrackingVector3(x / scale, y / scale, z / scale); }
+
+
+public:
+	static TrackingVector3 lerp(TrackingVector3 a, TrackingVector3 b, float t) 
+	{
+		a.x = (a.x * (1.0f - t)) + (b.x * t);
+		a.y = (a.y * (1.0f - t)) + (b.y * t);
+		a.z = (a.z * (1.0f - t)) + (b.z * t);
+		return a;
+	}
+
 };
 struct TrackingInfo {
 	uint32_t type; // ALVR_PACKET_TYPE_TRACKING_INFO

@@ -179,7 +179,7 @@ public:
 	}
 
 	bool ReportControllerState(const TrackingInfo &info
-		, const vr::HmdQuaternion_t controllerRotation, const TrackingVector3 &controllerPosition
+		, const vr::HmdQuaternion_t controllerRotation, const TrackingVector3 &controllerPosition, const TrackingVector3& linearVelocity, const TrackingVector3& angularVelocity
 		, bool enableControllerButton, const FreePIE::FreePIEFileMapping &freePIEData) {
 		bool recenterRequest = false;
 
@@ -192,6 +192,14 @@ public:
 		m_pose.vecPosition[0] = controllerPosition.x;
 		m_pose.vecPosition[1] = controllerPosition.y;
 		m_pose.vecPosition[2] = controllerPosition.z;
+
+		m_pose.vecVelocity[0] = linearVelocity.x;
+		m_pose.vecVelocity[1] = linearVelocity.y;
+		m_pose.vecVelocity[2] = linearVelocity.z;
+
+		m_pose.vecAngularVelocity[0] = angularVelocity.x;
+		m_pose.vecAngularVelocity[1] = angularVelocity.y;
+		m_pose.vecAngularVelocity[2] = angularVelocity.z;
 
 		m_pose.poseTimeOffset = 0;
 

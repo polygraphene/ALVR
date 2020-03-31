@@ -18,6 +18,11 @@
 
 extern HINSTANCE g_hInstance;
 
+inline float lerp(float a, float b, float f)
+{
+	return (float)((long)a * (1.0f - f)) + ((long)b * (long)f);
+}
+
 // Get elapsed time in us from Unix Epoch
 inline uint64_t GetTimestampUs() {
 	FILETIME ft;
@@ -229,6 +234,14 @@ inline TrackingVector3 RotateVectorQuaternion_add(const TrackingVector3& v1, con
 	dest.x = v1.x + v2.x;
 	dest.y = v1.y + v2.y;
 	dest.z = v1.z + v2.z;
+	return dest;
+}
+
+inline TrackingVector3 RotateVectorQuaternion_sub(const TrackingVector3& v1, const TrackingVector3& v2) {
+	TrackingVector3 dest;
+	dest.x = v1.x - v2.x;
+	dest.y = v1.y - v2.y;
+	dest.z = v1.z - v2.z;
 	return dest;
 }
 

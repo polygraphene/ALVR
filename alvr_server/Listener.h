@@ -15,6 +15,7 @@
 #include "packet_types.h"
 #include "Settings.h"
 #include "Statistics.h"
+#include <functional>
 extern "C" {
 #include "reedsolomon/rs.h"
 };

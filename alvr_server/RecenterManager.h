@@ -192,6 +192,15 @@ private:
 			transformed.x, transformed.y, transformed.z);
 	}
 
+	TrackingVector3 CalculateVelocity(const TrackingVector3& newPosition, const TrackingVector3& oldPosition, float deltaTime)
+	{
+		return RotateVectorQuaternion_scale(1.0f / deltaTime, RotateVectorQuaternion_sub(newPosition, oldPosition));
+	}
+
+	const float LERP_VELOCITY_PER_FRAME = 0.1f;
+
+	const float LERP_ANGLE_PER_FRAME = 0.1f;
+
 	void UpdateControllerState(const TrackingInfo& info) {
 		if (!Settings::Instance().m_enableController) {
 			return;
@@ -221,20 +230,74 @@ private:
 				, i, ret, m_remoteController[i]->GetSerialNumber().c_str());
 		}
 
-		if (m_remoteController[0]) {
-			bool recenterRequested = m_remoteController[0]->ReportControllerState(info, m_fixedOrientationController, m_fixedPositionController, enableControllerButton, data);
-			if (recenterRequested) {
-				BeginRecenter();
+		float deltaTime = float(clock() - mlastUpdateTime) / CLOCKS_PER_SEC;
+
+		if (deltaTime > 0.0f) {
+
+			mlastUpdateTime = clock();
+
+			if (m_remoteController[0]) {
+
+				TrackingVector3 newVelocity = CalculateVelocity(m_fixedPositionController, m_LastControllerPosition[0], deltaTime);
+
+				linearVelocity[0] = TrackingVector3::lerp(linearVelocity[0], newVelocity, LERP_VELOCITY_PER_FRAME);//lerp(linearVelocity[0].x, newVelocity.x, 60 * deltaTime);
+				
+				double eulerAngles[3];
+
+				QuaternionToEulerAngle(m_fixedOrientationController, eulerAngles);
+
+				TrackingVector3 currentRotation = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
+
+				TrackingVector3 newAngularVelocity = (currentRotation - lastRotationEuler[0]) / deltaTime;
+
+				angularVelocity[0] = TrackingVector3::lerp(angularVelocity[0], newAngularVelocity, LERP_ANGLE_PER_FRAME);
+
+				double euler[3] = { lastRotationEuler[0].x, lastRotationEuler[0].y, lastRotationEuler[0].z };
+
+				bool recenterRequested = m_remoteController[0]->ReportControllerState(info, EulerAngleToQuaternion(euler), m_LastControllerPosition[0], linearVelocity[0], angularVelocity[0], enableControllerButton, data);
+
+				m_LastControllerPosition[0] = m_fixedPositionController;
+
+				lastRotationEuler[0] = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
+
+				if (recenterRequested) {
+					BeginRecenter();
+				}
 			}
-		}
-		if (m_remoteController[1]) {
-			TrackingVector3 positionController1;
-			positionController1.x = (float)data.controller_position[1][0];
-			positionController1.y = (float)data.controller_position[1][1];
-			positionController1.z = (float)data.controller_position[1][2];
-			bool recenterRequested = m_remoteController[1]->ReportControllerState(info, EulerAngleToQuaternion(data.controller_orientation[1]), positionController1, enableControllerButton, data);
-			if (recenterRequested) {
-				BeginRecenter();
+			if (m_remoteController[1]) {
+
+				TrackingVector3 positionController1;
+				positionController1.x = (float)data.controller_position[1][0];
+				positionController1.y = (float)data.controller_position[1][1];
+				positionController1.z = (float)data.controller_position[1][2];
+
+				double eulerAngles[3];
+				eulerAngles[0] = data.controller_orientation[1][0];
+				eulerAngles[1] = data.controller_orientation[1][1];
+				eulerAngles[2] = data.controller_orientation[1][2];
+
+				TrackingVector3 currentRotation = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
+
+				TrackingVector3 newAngularVelocity = (currentRotation - lastRotationEuler[1]) / deltaTime;
+
+				angularVelocity[1] = TrackingVector3::lerp(angularVelocity[1], newAngularVelocity, LERP_ANGLE_PER_FRAME);
+
+				vr::HmdQuaternion_t controllerOrientation = EulerAngleToQuaternion(eulerAngles);
+
+				TrackingVector3 newVelocity = CalculateVelocity(positionController1, m_LastControllerPosition[1], deltaTime);
+
+				linearVelocity[1] = TrackingVector3::lerp(linearVelocity[1], newVelocity, LERP_VELOCITY_PER_FRAME);
+
+				double euler[3] = { eulerAngles[0], eulerAngles[1], eulerAngles[2] };
+
+				bool recenterRequested = m_remoteController[1]->ReportControllerState(info, EulerAngleToQuaternion(euler), positionController1, linearVelocity[1], angularVelocity[1], enableControllerButton, data);
+				if (recenterRequested) {
+					BeginRecenter();
+				}
+
+				m_LastControllerPosition[1] = positionController1;
+
+				lastRotationEuler[1] = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
 			}
 		}
 	}
@@ -259,4 +322,10 @@ private:
 	uint64_t m_rotationDiffLastInitialized;
 
 	static const int RECENTER_DURATION = 400 * 1000;
+
+	TrackingVector3 lastRotationEuler[2];
+	TrackingVector3 m_LastControllerPosition[2];
+	TrackingVector3 linearVelocity[2];
+	TrackingVector3 angularVelocity[2];
+	clock_t mlastUpdateTime = 0;
 };
