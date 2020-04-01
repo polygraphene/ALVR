@@ -5,6 +5,8 @@
 #include "packet_types.h"
 #include "FreePIE.h"
 #include "RemoteController.h"
+#include "SimpleMath.h"
+using namespace DirectX::SimpleMath;
 
 class RecenterManager
 {
@@ -76,7 +78,7 @@ public:
 		if (info.flags & TrackingInfo::FLAG_OTHER_TRACKING_SOURCE) {
 			UpdateOtherTrackingSource(info);
 		}
-		Log(L"GetRecenteredHMD: Old=(%f,%f,%f,%f) New=(%f,%f,%f,%f) pitch=%f-%f"
+		/*Log(L"GetRecenteredHMD: Old=(%f,%f,%f,%f) New=(%f,%f,%f,%f) pitch=%f-%f"
 			, info.HeadPose_Pose_Orientation.x, info.HeadPose_Pose_Orientation.y
 			, info.HeadPose_Pose_Orientation.z, info.HeadPose_Pose_Orientation.w
 			, m_fixedOrientationHMD.x, m_fixedOrientationHMD.y
@@ -97,7 +99,7 @@ public:
 				m_fixedOrientationController.x
 				, m_fixedOrientationController.y
 				, m_fixedOrientationController.z
-				, m_fixedOrientationController.w));
+				, m_fixedOrientationController.w));*/
 
 		m_freePIE->UpdateTrackingInfoByFreePIE(info, m_fixedOrientationHMD, m_fixedOrientationController, m_fixedPositionHMD, m_fixedPositionController);
 
@@ -240,15 +242,41 @@ private:
 
 				TrackingVector3 newVelocity = CalculateVelocity(m_fixedPositionController, m_LastControllerPosition[0], deltaTime);
 
+				//newVelocity.x = clamp(newVelocity.x, -5.0f, 5.0f);
+				//newVelocity.y = clamp(newVelocity.y, -5.0f, 5.0f);
+				//newVelocity.z = clamp(newVelocity.z, -5.0f, 5.0f);
+
 				linearVelocity[0] = TrackingVector3::lerp(linearVelocity[0], newVelocity, LERP_VELOCITY_PER_FRAME);//lerp(linearVelocity[0].x, newVelocity.x, 60 * deltaTime);
 				
 				double eulerAngles[3];
 
+				Quaternion controllerRotation = Quaternion(m_fixedOrientationController.x, m_fixedOrientationController.y, m_fixedOrientationController.z, m_fixedOrientationController.w);
+				lastRotation.Inverse(lastRotation);
+				Quaternion deltaRotation = lastRotation * controllerRotation;
+
+				lastRotation = controllerRotation;
+
+				vr::HmdQuaternion_t deltaRotationQ;
+				deltaRotationQ.x = deltaRotation.x;
+				deltaRotationQ.y = deltaRotation.y;
+				deltaRotationQ.z = deltaRotation.z;
+				deltaRotationQ.w = deltaRotation.w;
+
+				double deltaRotationEuler[3];
+
+				QuaternionToEulerAngle(deltaRotationQ, deltaRotationEuler);
+
+				TrackingVector3 newAngularVelocity = TrackingVector3(deltaRotationEuler[0] / deltaTime, deltaRotationEuler[1] / deltaTime, deltaRotationEuler[2] / deltaTime);
+
+				newAngularVelocity.x = clamp(newAngularVelocity.x, -1.0f, 1.0f);
+				newAngularVelocity.y = clamp(newAngularVelocity.y, -1.0f, 1.0f);
+				newAngularVelocity.z = clamp(newAngularVelocity.z, -1.0f, 1.0f);
+
 				QuaternionToEulerAngle(m_fixedOrientationController, eulerAngles);
 
-				TrackingVector3 currentRotation = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
+				//TrackingVector3 currentRotation = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
 
-				TrackingVector3 newAngularVelocity = (currentRotation - lastRotationEuler[0]) / deltaTime;
+				//TrackingVector3 newAngularVelocity = (currentRotation - lastRotationEuler[0]) / deltaTime;
 
 				angularVelocity[0] = TrackingVector3::lerp(angularVelocity[0], newAngularVelocity, LERP_ANGLE_PER_FRAME);
 
@@ -285,6 +313,10 @@ private:
 				vr::HmdQuaternion_t controllerOrientation = EulerAngleToQuaternion(eulerAngles);
 
 				TrackingVector3 newVelocity = CalculateVelocity(positionController1, m_LastControllerPosition[1], deltaTime);
+
+				//newVelocity.x = clamp(newVelocity.x, -5.0f, 5.0f);
+				//newVelocity.y = clamp(newVelocity.y, -5.0f, 5.0f);
+				//newVelocity.z = clamp(newVelocity.z, -5.0f, 5.0f);
 
 				linearVelocity[1] = TrackingVector3::lerp(linearVelocity[1], newVelocity, LERP_VELOCITY_PER_FRAME);
 
@@ -324,6 +356,7 @@ private:
 	static const int RECENTER_DURATION = 400 * 1000;
 
 	TrackingVector3 lastRotationEuler[2];
+	Quaternion lastRotation;
 	TrackingVector3 m_LastControllerPosition[2];
 	TrackingVector3 linearVelocity[2];
 	TrackingVector3 angularVelocity[2];

@@ -144,8 +144,8 @@ public:
 
 		assert(totalShards <= DATA_SHARDS_MAX);
 
-		Log(L"reed_solomon_new. dataShards=%d totalParityShards=%d totalShards=%d blockSize=%d shardPackets=%d"
-			, dataShards, totalParityShards, totalShards, blockSize, shardPackets);
+		//Log(L"reed_solomon_new. dataShards=%d totalParityShards=%d totalShards=%d blockSize=%d shardPackets=%d"
+		//	, dataShards, totalParityShards, totalShards, blockSize, shardPackets);
 
 		reed_solomon *rs = reed_solomon_new(dataShards, totalParityShards);
 
@@ -218,14 +218,14 @@ public:
 
 	void SendVideo(uint8_t *buf, int len, uint64_t frameIndex) {
 		if (!m_Socket->IsClientValid()) {
-			Log(L"Skip sending packet because client is not connected. Packet Length=%d FrameIndex=%llu", len, frameIndex);
+			//Log(L"Skip sending packet because client is not connected. Packet Length=%d FrameIndex=%llu", len, frameIndex);
 			return;
 		}
 		if (!m_Streaming) {
-			Log(L"Skip sending packet because streaming is off.");
+			//Log(L"Skip sending packet because streaming is off.");
 			return;
 		}
-		Log(L"Sending %d bytes FrameIndex=%llu", len, frameIndex);
+		//Log(L"Sending %d bytes FrameIndex=%llu", len, frameIndex);
 
 		FECSend(buf, len, frameIndex);
 	}
@@ -234,14 +234,14 @@ public:
 		uint8_t packetBuffer[2000];
 
 		if (!m_Socket->IsClientValid()) {
-			Log(L"Skip sending audio packet because client is not connected. Packet Length=%d", len);
+			//Log(L"Skip sending audio packet because client is not connected. Packet Length=%d", len);
 			return;
 		}
 		if (!m_Streaming) {
-			Log(L"Skip sending audio packet because streaming is off.");
+			//Log(L"Skip sending audio packet because streaming is off.");
 			return;
 		}
-		Log(L"Sending audio %d bytes", len);
+		//Log(L"Sending audio %d bytes", len);
 
 		int remainBuffer = len;
 		for (int i = 0; remainBuffer != 0; i++) {
@@ -288,7 +288,7 @@ public:
 		int pos = 0;
 		uint32_t type = *(uint32_t*)buf;
 
-		Log(L"Received packet. Type=%d", type);
+		//Log(L"Received packet. Type=%d", type);
 		if (type == ALVR_PACKET_TYPE_HELLO_MESSAGE && len >= sizeof(HelloMessage)) {
 			HelloMessage *message = (HelloMessage *)buf;
 			SanitizeDeviceName(message->deviceName);
@@ -320,11 +320,11 @@ public:
 			m_TrackingInfo = *(TrackingInfo *)buf;
 			LeaveCriticalSection(&m_CS);
 
-			Log(L"got tracking info %d %f %f %f %f", (int)m_TrackingInfo.FrameIndex,
+			/*Log(L"got tracking info %d %f %f %f %f", (int)m_TrackingInfo.FrameIndex,
 				m_TrackingInfo.HeadPose_Pose_Orientation.x,
 				m_TrackingInfo.HeadPose_Pose_Orientation.y,
 				m_TrackingInfo.HeadPose_Pose_Orientation.z,
-				m_TrackingInfo.HeadPose_Pose_Orientation.w);
+				m_TrackingInfo.HeadPose_Pose_Orientation.w);*/
 			m_PoseUpdatedCallback();
 		}
 		else if (type == ALVR_PACKET_TYPE_TIME_SYNC && len >= sizeof(TimeSync)) {

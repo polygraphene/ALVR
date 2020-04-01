@@ -18,6 +18,17 @@
 
 extern HINSTANCE g_hInstance;
 
+
+inline float clamp(float v, float min, float max)
+{
+	if (v < min)
+		v = min;
+	else if (v > max)
+		v = max;
+	return v;
+}
+
+
 inline float lerp(float a, float b, float f)
 {
 	return (float)((long)a * (1.0f - f)) + ((long)b * (long)f);

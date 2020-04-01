@@ -118,7 +118,7 @@ namespace
 
 			while ( !m_bExiting )
 			{
-				Log(L"CEncoder: Waiting for new frame...");
+				//Log(L"CEncoder: Waiting for new frame...");
 
 				m_newFrameReady.Wait();
 				if ( m_bExiting )
@@ -145,7 +145,7 @@ namespace
 
 		void NewFrameReady()
 		{
-			Log(L"New Frame Ready");
+			//Log(L"New Frame Ready");
 			m_encodeFinished.Reset();
 			m_newFrameReady.Set();
 		}
@@ -194,11 +194,11 @@ public:
 
 			if (current - m_PreviousVsync < INTERVAL - 2000) {
 				int sleepTime = (int)((m_PreviousVsync + INTERVAL) - current) / 1000;
-				Log(L"Skip VSync Event. Sleep %llu ms", sleepTime);
+				//Log(L"Skip VSync Event. Sleep %llu ms", sleepTime);
 				Sleep(sleepTime);
 			}
 			else {
-				Log(L"Generate VSync Event");
+				//Log(L"Generate VSync Event");
 				vr::VRServerDriverHost()->VsyncEvent(0);
 				m_PreviousVsync = GetTimestampUs();
 			}
@@ -434,7 +434,7 @@ public:
 	/** After Present returns, calls this to get the next index to use for rendering. */
 	virtual void GetNextSwapTextureSetIndex(vr::SharedTextureHandle_t sharedTextureHandles[2], uint32_t(*pIndices)[2]) override
 	{
-		Log(L"GetNextSwapTextureSetIndex %p %p %d %d", sharedTextureHandles[0], sharedTextureHandles[1], (*pIndices)[0], (*pIndices)[1]);
+		//Log(L"GetNextSwapTextureSetIndex %p %p %d %d", sharedTextureHandles[0], sharedTextureHandles[1], (*pIndices)[0], (*pIndices)[1]);
 		(*pIndices)[0]++;
 		(*pIndices)[0] %= 3;
 		(*pIndices)[1]++;
@@ -445,14 +445,15 @@ public:
 	* using CreateSwapTextureSet and should be alternated per frame.  Call Present once all layers have been submitted. */
 	virtual void SubmitLayer(const SubmitLayerPerEye_t(&perEye)[2], const vr::HmdMatrix34_t *pPose) override
 	{
-		Log(L"SubmitLayer Handles=%p,%p DepthHandles=%p,%p %f-%f,%f-%f %f-%f,%f-%f\n%f,%f,%f,%f\n%f,%f,%f,%f\n%f,%f,%f,%f"
+		/*Log(L"SubmitLayer Handles=%p,%p DepthHandles=%p,%p %f-%f,%f-%f %f-%f,%f-%f\n%f,%f,%f,%f\n%f,%f,%f,%f\n%f,%f,%f,%f"
 			, perEye[0].hTexture, perEye[1].hTexture, perEye[0].hDepthTexture, perEye[1].hDepthTexture
 			, perEye[0].bounds.uMin, perEye[0].bounds.uMax, perEye[0].bounds.vMin, perEye[0].bounds.vMax
 			, perEye[1].bounds.uMin, perEye[1].bounds.uMax, perEye[1].bounds.vMin, perEye[1].bounds.vMax
 			, pPose->m[0][0], pPose->m[0][1], pPose->m[0][2], pPose->m[0][3]
 			, pPose->m[1][0], pPose->m[1][1], pPose->m[1][2], pPose->m[1][3]
 			, pPose->m[2][0], pPose->m[2][1], pPose->m[2][2], pPose->m[2][3]
-		);
+		);*/
+
 		// pPose is qRotation which is calculated by SteamVR using vr::DriverPose_t::qRotation.
 		// pPose->m[0][0], pPose->m[0][1], pPose->m[0][2],
 		// pPose->m[1][0], pPose->m[1][1], pPose->m[1][2], 
@@ -500,7 +501,7 @@ public:
 				m_framePoseRotation.z = minIt->info.HeadPose_Pose_Orientation.z;
 				m_framePoseRotation.w = minIt->info.HeadPose_Pose_Orientation.w;
 
-				Log(L"Frame pose found. m_prevSubmitFrameIndex=%llu m_submitFrameIndex=%llu minDiff=%f", m_prevSubmitFrameIndex, m_submitFrameIndex, minDiff);
+				//Log(L"Frame pose found. m_prevSubmitFrameIndex=%llu m_submitFrameIndex=%llu minDiff=%f", m_prevSubmitFrameIndex, m_submitFrameIndex, minDiff);
 			}
 			else {
 				m_submitFrameIndex = 0;
@@ -530,7 +531,7 @@ public:
 	virtual void Present(vr::SharedTextureHandle_t syncTexture) override
 	{
 		bool useMutex = Settings::Instance().m_UseKeyedMutex;
-		Log(L"Present syncTexture=%p (use:%d) m_prevSubmitFrameIndex=%llu m_submitFrameIndex=%llu", syncTexture, useMutex, m_prevSubmitFrameIndex, m_submitFrameIndex);
+		//Log(L"Present syncTexture=%p (use:%d) m_prevSubmitFrameIndex=%llu m_submitFrameIndex=%llu", syncTexture, useMutex, m_prevSubmitFrameIndex, m_submitFrameIndex);
 
 		IDXGIKeyedMutex *pKeyedMutex = NULL;
 
@@ -555,7 +556,7 @@ public:
 			// This enforces scheduling of work on the gpu between processes.
 			if (SUCCEEDED(pSyncTexture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void **)&pKeyedMutex)))
 			{
-				Log(L"[VDispDvr] Wait for SyncTexture Mutex.");
+				//Log(L"[VDispDvr] Wait for SyncTexture Mutex.");
 				// TODO: Reasonable timeout and timeout handling
 				HRESULT hr = pKeyedMutex->AcquireSync(0, 10);
 				if (hr != S_OK)
@@ -566,7 +567,7 @@ public:
 				}
 			}
 
-			Log(L"[VDispDvr] Mutex Acquired.");
+			//Log(L"[VDispDvr] Mutex Acquired.");
 		}
 
 		CopyTexture(layerCount);
@@ -577,7 +578,7 @@ public:
 				pKeyedMutex->ReleaseSync(0);
 				pKeyedMutex->Release();
 			}
-			Log(L"[VDispDvr] Mutex Released.");
+			//Log(L"[VDispDvr] Mutex Released.");
 		}
 
 		m_pEncoder->NewFrameReady();
@@ -604,7 +605,7 @@ public:
 				D3D11_TEXTURE2D_DESC desc;
 				Texture[i][0]->GetDesc(&desc);
 
-				Log(L"CopyTexture: layer=%d/%d pid=%d Texture Size=%dx%d Format=%d", i, layerCount, it->second.first->pid, desc.Width, desc.Height, desc.Format);
+				//Log(L"CopyTexture: layer=%d/%d pid=%d Texture Size=%dx%d Format=%d", i, layerCount, it->second.first->pid, desc.Width, desc.Height, desc.Format);
 
 				// Find right eye texture.
 				HANDLE rightEyeTexture = (HANDLE)m_submitLayers[i][1].hTexture;
@@ -628,7 +629,7 @@ public:
 		// This can go away, but is useful to see it as a separate packet on the gpu in traces.
 		m_pD3DRender->GetContext()->Flush();
 
-		Log(L"Waiting for finish of previous encode.");
+		//Log(L"Waiting for finish of previous encode.");
 
 		if (Settings::Instance().m_captureLayerDDSTrigger) {
 			wchar_t buf[1000];
@@ -658,8 +659,8 @@ public:
 		}
 
 		uint64_t submitFrameIndex = m_submitFrameIndex + Settings::Instance().m_trackingFrameOffset;
-		Log(L"Fix frame index. FrameIndex=%llu Offset=%d New FrameIndex=%llu"
-			, m_submitFrameIndex, Settings::Instance().m_trackingFrameOffset, submitFrameIndex);
+		//Log(L"Fix frame index. FrameIndex=%llu Offset=%d New FrameIndex=%llu"
+		//	, m_submitFrameIndex, Settings::Instance().m_trackingFrameOffset, submitFrameIndex);
 
 		// Copy entire texture to staging so we can read the pixels to send to remote device.
 		m_pEncoder->CopyToStaging(pTexture, bounds, layerCount, m_recenterManager->IsRecentering(), presentationTime, submitFrameIndex, m_submitClientTime, m_recenterManager->GetFreePIEMessage(), debugText);
@@ -884,6 +885,7 @@ public:
 
 	virtual void EnterStandby() override
 	{
+		Log(L"EnterStandby CRemoteHmd ");
 	}
 
 	void *GetComponent(const char *pchComponentNameAndVersion) override
@@ -928,7 +930,7 @@ public:
 			pose.vecPosition[1] = position.y;
 			pose.vecPosition[2] = position.z;
 
-			Log(L"GetPose: Rotation=(%f, %f, %f, %f) Position=(%f, %f, %f)",
+			/*Log(L"GetPose: Rotation=(%f, %f, %f, %f) Position=(%f, %f, %f)",
 				pose.qRotation.x,
 				pose.qRotation.y,
 				pose.qRotation.z,
@@ -936,12 +938,22 @@ public:
 				pose.vecPosition[0],
 				pose.vecPosition[1],
 				pose.vecPosition[2]
-			);
+			);*/
 
 			// To disable time warp (or pose prediction), we dont set (set to zero) velocity and acceleration.
 
 			pose.poseTimeOffset = 0;
 		}
+
+		Log(L"HMD GetPose: Rotation=(%f, %f, %f, %f) Position=(%f, %f, %f)",
+			pose.qRotation.x,
+			pose.qRotation.y,
+			pose.qRotation.z,
+			pose.qRotation.w,
+			pose.vecPosition[0],
+			pose.vecPosition[1],
+			pose.vecPosition[2]
+		);
 
 		return pose;
 	}
@@ -956,6 +968,7 @@ public:
 		{
 			//Log(L"RunFrame");
 			//vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, GetPose(), sizeof(vr::DriverPose_t));
+			
 		}
 	}
 
@@ -1067,12 +1080,12 @@ public:
 	void OnPoseUpdated() {
 		if (m_unObjectId != vr::k_unTrackedDeviceIndexInvalid)
 		{
-			if (!m_Listener->HasValidTrackingInfo()) {
-				return;
-			}
-
 			TrackingInfo info;
-			m_Listener->GetTrackingInfo(info);
+			if (!m_Listener->HasValidTrackingInfo()) {
+				//Log(L"OnPoseUpdated m_Listener has no valid info!");
+				//return;
+			}else
+				m_Listener->GetTrackingInfo(info);
 
 			m_recenterManager->OnPoseUpdated(info);
 			m_directModeComponent->OnPoseUpdated(info);
@@ -1138,9 +1151,9 @@ public:
 	virtual const char *GetTrackedDeviceDriverVersion()
 		{ return vr::ITrackedDeviceServerDriver_Version; }
 	virtual void RunFrame();
-	virtual bool ShouldBlockStandbyMode() override { return false; }
-	virtual void EnterStandby() override {}
-	virtual void LeaveStandby() override {}
+	virtual bool ShouldBlockStandbyMode() override { return true; }
+	virtual void EnterStandby() override { Log(L"EnterStandby() DisplayRedirect"); }
+	virtual void LeaveStandby() override { Log(L"LeaveStandby() DisplayRedirect"); }
 
 private:
 	std::shared_ptr<CRemoteHmd> m_pRemoteHmd;
@@ -1189,6 +1202,8 @@ void CServerDriver_DisplayRedirect::Cleanup()
 
 void CServerDriver_DisplayRedirect::RunFrame()
 {
+	//Log(L"RunFrame DisplayRedirect");
+	m_pRemoteHmd->OnPoseUpdated();
 }
 
 CServerDriver_DisplayRedirect g_serverDriverDisplayRedirect;

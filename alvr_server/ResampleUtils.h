@@ -95,8 +95,8 @@ public:
 		dst_bufsize = av_samples_get_buffer_size(&dst_linesize, dst_nb_channels,
 			ret, dst_sample_fmt, 1);
 
-		Log(L"Converted. src_sample_fmt=%d dst_sample_fmt=%d src_nb_samples=%d ret=%d dst_bufsize=%d"
-			, src_sample_fmt, dst_sample_fmt, src_nb_samples, ret, dst_bufsize);
+		//Log(L"Converted. src_sample_fmt=%d dst_sample_fmt=%d src_nb_samples=%d ret=%d dst_bufsize=%d"
+		//	, src_sample_fmt, dst_sample_fmt, src_nb_samples, ret, dst_bufsize);
 	}
 
 	uint8_t *GetDest() {
