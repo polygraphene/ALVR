@@ -5,8 +5,6 @@
 #include "packet_types.h"
 #include "FreePIE.h"
 #include "RemoteController.h"
-#include "SimpleMath.h"
-using namespace DirectX::SimpleMath;
 
 class RecenterManager
 {
@@ -20,6 +18,24 @@ public:
 		, m_freePIE(std::make_shared<FreePIE>())
 		, m_controllerDetected(false)
 	{
+	}
+
+	void CreateRemoteController(bool leftHand = false) {
+		int i = leftHand?1:0;
+		if (!m_remoteControllers[0]) {
+
+			m_remoteControllers[0] = std::make_shared<RemoteControllerServerDriver>(leftHand, 0);
+
+			bool ret = vr::VRServerDriverHost()->TrackedDeviceAdded(
+				m_remoteControllers[0]->GetSerialNumber().c_str(),
+				vr::TrackedDeviceClass_Controller,
+				m_remoteControllers[0].get());
+			Log(L"TrackedDeviceAdded vr::TrackedDeviceClass_Controller index=%d Ret=%d SerialNumber=%hs"
+				, 0, ret, m_remoteControllers[0]->GetSerialNumber().c_str());
+		}
+		else {
+			Log(L"Can't create new Remote Controller %I! Already present!", i);
+		}
 	}
 
 	bool HasValidTrackingInfo() {
@@ -147,7 +163,7 @@ public:
 	std::string GetFreePIEMessage() {
 		return m_freePIE->GetData().message;
 	}
-
+	
 private:
 	void UpdateOtherTrackingSource(const TrackingInfo &info) {
 		if (m_rotationDiffLastInitialized == 0) {
@@ -213,7 +229,7 @@ private:
 
 		// Add controller as specified.
 		for (int i = 0; i < m_controllerDetected; i++) {
-			if (m_remoteController[i]) {
+			if (m_remoteControllers[i]) {
 				// Already enabled.
 				continue;
 			}
@@ -222,14 +238,14 @@ private:
 			if (i == 1) {
 				handed = !handed;
 			}
-			m_remoteController[i] = std::make_shared<RemoteControllerServerDriver>(handed, i);
+			m_remoteControllers[i] = std::make_shared<RemoteControllerServerDriver>(handed, i);
 
 			bool ret = vr::VRServerDriverHost()->TrackedDeviceAdded(
-				m_remoteController[i]->GetSerialNumber().c_str(),
+				m_remoteControllers[i]->GetSerialNumber().c_str(),
 				vr::TrackedDeviceClass_Controller,
-				m_remoteController[i].get());
+				m_remoteControllers[i].get());
 			Log(L"TrackedDeviceAdded vr::TrackedDeviceClass_Controller index=%d Ret=%d SerialNumber=%hs"
-				, i, ret, m_remoteController[i]->GetSerialNumber().c_str());
+				, i, ret, m_remoteControllers[i]->GetSerialNumber().c_str());
 		}
 
 		float deltaTime = float(clock() - mlastUpdateTime) / CLOCKS_PER_SEC;
@@ -238,51 +254,25 @@ private:
 
 			mlastUpdateTime = clock();
 
-			if (m_remoteController[0]) {
+			if (m_remoteControllers[0]) {
 
 				TrackingVector3 newVelocity = CalculateVelocity(m_fixedPositionController, m_LastControllerPosition[0], deltaTime);
-
-				//newVelocity.x = clamp(newVelocity.x, -5.0f, 5.0f);
-				//newVelocity.y = clamp(newVelocity.y, -5.0f, 5.0f);
-				//newVelocity.z = clamp(newVelocity.z, -5.0f, 5.0f);
 
 				linearVelocity[0] = TrackingVector3::lerp(linearVelocity[0], newVelocity, LERP_VELOCITY_PER_FRAME);//lerp(linearVelocity[0].x, newVelocity.x, 60 * deltaTime);
 				
 				double eulerAngles[3];
 
-				Quaternion controllerRotation = Quaternion(m_fixedOrientationController.x, m_fixedOrientationController.y, m_fixedOrientationController.z, m_fixedOrientationController.w);
-				lastRotation.Inverse(lastRotation);
-				Quaternion deltaRotation = lastRotation * controllerRotation;
-
-				lastRotation = controllerRotation;
-
-				vr::HmdQuaternion_t deltaRotationQ;
-				deltaRotationQ.x = deltaRotation.x;
-				deltaRotationQ.y = deltaRotation.y;
-				deltaRotationQ.z = deltaRotation.z;
-				deltaRotationQ.w = deltaRotation.w;
-
-				double deltaRotationEuler[3];
-
-				QuaternionToEulerAngle(deltaRotationQ, deltaRotationEuler);
-
-				TrackingVector3 newAngularVelocity = TrackingVector3(deltaRotationEuler[0] / deltaTime, deltaRotationEuler[1] / deltaTime, deltaRotationEuler[2] / deltaTime);
-
-				newAngularVelocity.x = clamp(newAngularVelocity.x, -1.0f, 1.0f);
-				newAngularVelocity.y = clamp(newAngularVelocity.y, -1.0f, 1.0f);
-				newAngularVelocity.z = clamp(newAngularVelocity.z, -1.0f, 1.0f);
-
 				QuaternionToEulerAngle(m_fixedOrientationController, eulerAngles);
 
-				//TrackingVector3 currentRotation = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
+				TrackingVector3 currentRotation = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
 
-				//TrackingVector3 newAngularVelocity = (currentRotation - lastRotationEuler[0]) / deltaTime;
+				TrackingVector3 newAngularVelocity = (currentRotation - lastRotationEuler[0]) / deltaTime;
 
 				angularVelocity[0] = TrackingVector3::lerp(angularVelocity[0], newAngularVelocity, LERP_ANGLE_PER_FRAME);
 
 				double euler[3] = { lastRotationEuler[0].x, lastRotationEuler[0].y, lastRotationEuler[0].z };
 
-				bool recenterRequested = m_remoteController[0]->ReportControllerState(info, EulerAngleToQuaternion(euler), m_LastControllerPosition[0], linearVelocity[0], angularVelocity[0], enableControllerButton, data);
+				bool recenterRequested = m_remoteControllers[0]->ReportControllerState(info, EulerAngleToQuaternion(euler), m_LastControllerPosition[0], linearVelocity[0], angularVelocity[0], enableControllerButton, data);
 
 				m_LastControllerPosition[0] = m_fixedPositionController;
 
@@ -292,7 +282,7 @@ private:
 					BeginRecenter();
 				}
 			}
-			if (m_remoteController[1]) {
+			if (m_remoteControllers[1]) {
 
 				TrackingVector3 positionController1;
 				positionController1.x = (float)data.controller_position[1][0];
@@ -314,15 +304,11 @@ private:
 
 				TrackingVector3 newVelocity = CalculateVelocity(positionController1, m_LastControllerPosition[1], deltaTime);
 
-				//newVelocity.x = clamp(newVelocity.x, -5.0f, 5.0f);
-				//newVelocity.y = clamp(newVelocity.y, -5.0f, 5.0f);
-				//newVelocity.z = clamp(newVelocity.z, -5.0f, 5.0f);
-
 				linearVelocity[1] = TrackingVector3::lerp(linearVelocity[1], newVelocity, LERP_VELOCITY_PER_FRAME);
 
 				double euler[3] = { eulerAngles[0], eulerAngles[1], eulerAngles[2] };
 
-				bool recenterRequested = m_remoteController[1]->ReportControllerState(info, EulerAngleToQuaternion(euler), positionController1, linearVelocity[1], angularVelocity[1], enableControllerButton, data);
+				bool recenterRequested = m_remoteControllers[1]->ReportControllerState(info, EulerAngleToQuaternion(euler), positionController1, linearVelocity[1], angularVelocity[1], enableControllerButton, data);
 				if (recenterRequested) {
 					BeginRecenter();
 				}
@@ -335,7 +321,7 @@ private:
 	}
 
 	int m_controllerDetected;
-	std::shared_ptr<RemoteControllerServerDriver> m_remoteController[2];
+	std::shared_ptr<RemoteControllerServerDriver> m_remoteControllers[2];
 
 	std::shared_ptr<FreePIE> m_freePIE;
 
@@ -356,7 +342,6 @@ private:
 	static const int RECENTER_DURATION = 400 * 1000;
 
 	TrackingVector3 lastRotationEuler[2];
-	Quaternion lastRotation;
 	TrackingVector3 m_LastControllerPosition[2];
 	TrackingVector3 linearVelocity[2];
 	TrackingVector3 angularVelocity[2];

@@ -123,7 +123,7 @@ bool UdpSocket::Recv(char *buf, int *buflen, sockaddr_in *addr, int addrlen) {
 						Log(L"Cause packet loss for debugging.");
 					}
 					if (sendret < 0) {
-						Log(L"sendto error: %d %hs", WSAGetLastError(), ErrorStr(WSAGetLastError()).c_str());
+						//Log(L"sendto error: %d %hs", WSAGetLastError(), ErrorStr(WSAGetLastError()).c_str());
 						if (WSAGetLastError() != WSAEWOULDBLOCK) {
 							// Fatal Error!
 							abort();

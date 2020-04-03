@@ -210,7 +210,7 @@ public:
 	}
 
 	void InsertVsync() {
-		Log(L"Insert VSync Event");
+		//Log(L"Insert VSync Event");
 		vr::VRServerDriverHost()->VsyncEvent(0);
 		m_PreviousVsync = GetTimestampUs();
 	}
@@ -320,10 +320,10 @@ public:
 			recentered.z,
 			&history.rotationMatrix);
 
-		Log(L"Rotation Matrix=(%f, %f, %f, %f) (%f, %f, %f, %f) (%f, %f, %f, %f)"
+		/*Log(L"Rotation Matrix=(%f, %f, %f, %f) (%f, %f, %f, %f) (%f, %f, %f, %f)"
 			, history.rotationMatrix.m[0][0], history.rotationMatrix.m[0][1], history.rotationMatrix.m[0][2], history.rotationMatrix.m[0][3]
 			, history.rotationMatrix.m[1][0], history.rotationMatrix.m[1][1], history.rotationMatrix.m[1][2], history.rotationMatrix.m[1][3]
-			, history.rotationMatrix.m[2][0], history.rotationMatrix.m[2][1], history.rotationMatrix.m[2][2], history.rotationMatrix.m[2][3]);
+			, history.rotationMatrix.m[2][0], history.rotationMatrix.m[2][1], history.rotationMatrix.m[2][2], history.rotationMatrix.m[2][3]);*/
 
 		m_poseMutex.Wait(INFINITE);
 		if (m_poseBuffer.size() == 0) {
@@ -416,7 +416,7 @@ public:
 	/** Used to purge all texture sets for a given process. */
 	virtual void DestroyAllSwapTextureSets(uint32_t unPid) override
 	{
-		Log(L"DestroyAllSwapTextureSets pid=%d", unPid);
+		//Log(L"DestroyAllSwapTextureSets pid=%d", unPid);
 
 		for (auto it = m_handleMap.begin(); it != m_handleMap.end();) {
 			if (it->second.first->pid == unPid) {
@@ -539,7 +539,7 @@ public:
 		m_submitLayer = 0;
 
 		if (m_prevSubmitFrameIndex == m_submitFrameIndex) {
-			Log(L"Discard duplicated frame. FrameIndex=%llu", m_submitFrameIndex);
+			//Log(L"Discard duplicated frame. FrameIndex=%llu", m_submitFrameIndex);
 			return;
 		}
 
@@ -770,6 +770,8 @@ public:
 		m_recenterManager.reset();
 	}
 
+	bool isFake = true;
+
 	std::string GetSerialNumber() const { return Settings::Instance().m_sSerialNumber; }
 	
 	void Enable()
@@ -792,7 +794,8 @@ public:
 				m_trackingReference.get());
 			Log(L"TrackedDeviceAdded(TrackingReference) Ret=%d SerialNumber=%hs", ret, GetSerialNumber().c_str());
 		}
-		
+		m_recenterManager = std::make_shared<RecenterManager>();
+		m_recenterManager->CreateRemoteController(false);
 	}
 
 	virtual vr::EVRInitError Activate(vr::TrackedDeviceIndex_t unObjectId) override
@@ -869,8 +872,6 @@ public:
 		m_VSyncThread = std::make_shared<VSyncThread>();
 		m_VSyncThread->Start();
 
-		m_recenterManager = std::make_shared<RecenterManager>();
-
 		m_displayComponent = std::make_shared<DisplayComponent>();
 		m_directModeComponent = std::make_shared<DirectModeComponent>(m_D3DRender, m_encoder, m_Listener, m_recenterManager);
 
@@ -945,7 +946,7 @@ public:
 			pose.poseTimeOffset = 0;
 		}
 
-		Log(L"HMD GetPose: Rotation=(%f, %f, %f, %f) Position=(%f, %f, %f)",
+		/*Log(L"HMD GetPose: Rotation=(%f, %f, %f, %f) Position=(%f, %f, %f)",
 			pose.qRotation.x,
 			pose.qRotation.y,
 			pose.qRotation.z,
@@ -953,7 +954,7 @@ public:
 			pose.vecPosition[0],
 			pose.vecPosition[1],
 			pose.vecPosition[2]
-		);
+		);*/
 
 		return pose;
 	}
@@ -1080,20 +1081,34 @@ public:
 	void OnPoseUpdated() {
 		if (m_unObjectId != vr::k_unTrackedDeviceIndexInvalid)
 		{
+			isFake = !m_Listener->IsConnected();
+
 			TrackingInfo info;
 			if (!m_Listener->HasValidTrackingInfo()) {
-				//Log(L"OnPoseUpdated m_Listener has no valid info!");
+
+				info.type = ALVR_PACKET_TYPE_TRACKING_INFO;
+				info.flags = 0;
+				info.clientTime = GetTimestampUs();
+				info.FrameIndex = 0;
+				info.predictedDisplayTime = GetTimestampUs();
+
+				m_Listener->UpdateLastSeen();
+
+				// Don't stop the update with fake tracking info
 				//return;
-			}else
+			}
+			else {
 				m_Listener->GetTrackingInfo(info);
+			}
 
 			m_recenterManager->OnPoseUpdated(info);
 			m_directModeComponent->OnPoseUpdated(info);
 			
 			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, GetPose(), sizeof(vr::DriverPose_t));
 
-			Log(L"Generate VSync Event by OnPoseUpdated");
-			m_VSyncThread->InsertVsync();
+			//Log(L"Generate VSync Event by OnPoseUpdated");
+			if (!isFake)
+				m_VSyncThread->InsertVsync();
 
 			if (m_trackingReference) {
 				m_trackingReference->OnPoseUpdated();
@@ -1103,7 +1118,7 @@ public:
 
 	void OnNewClient(int refreshRate) {
 		m_refreshRate = refreshRate;
-
+		Log(L"CRemoteHMD OnNewClient( refreshRate : %u )",refreshRate);
 		vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, vr::Prop_DisplayFrequency_Float, (float)m_refreshRate);
 		// Insert IDR frame for faster startup of decoding.
 		m_encoder->OnClientConnected();
@@ -1151,7 +1166,7 @@ public:
 	virtual const char *GetTrackedDeviceDriverVersion()
 		{ return vr::ITrackedDeviceServerDriver_Version; }
 	virtual void RunFrame();
-	virtual bool ShouldBlockStandbyMode() override { return true; }
+	virtual bool ShouldBlockStandbyMode() override { return false; }
 	virtual void EnterStandby() override { Log(L"EnterStandby() DisplayRedirect"); }
 	virtual void LeaveStandby() override { Log(L"LeaveStandby() DisplayRedirect"); }
 
@@ -1202,8 +1217,8 @@ void CServerDriver_DisplayRedirect::Cleanup()
 
 void CServerDriver_DisplayRedirect::RunFrame()
 {
-	//Log(L"RunFrame DisplayRedirect");
-	m_pRemoteHmd->OnPoseUpdated();
+	if (m_pRemoteHmd->isFake)
+		m_pRemoteHmd->OnPoseUpdated();
 }
 
 CServerDriver_DisplayRedirect g_serverDriverDisplayRedirect;

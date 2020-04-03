@@ -281,6 +281,10 @@ public:
 		}
 	}
 
+	bool IsConnected() {
+		return m_Connected;
+	}
+
 	void ProcessRecv(char *buf, int len, sockaddr_in *addr) {
 		if (len < 4) {
 			return;
