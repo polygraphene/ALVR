@@ -178,6 +178,14 @@ public:
 		return m_pose;
 	}
 
+	double NotNaN(double v) 
+	{
+		if (isnan(v)) {
+			return 0.0;
+		}
+		return v;
+	}
+
 	bool ReportControllerState(const TrackingInfo &info
 		, const vr::HmdQuaternion_t controllerRotation, const TrackingVector3 &controllerPosition, const TrackingVector3& linearVelocity, const TrackingVector3& angularVelocity
 		, bool enableControllerButton, const FreePIE::FreePIEFileMapping &freePIEData) {
@@ -187,19 +195,23 @@ public:
 			return false;
 		}
 
+		//Log(L"ReportControllerState linearVelocity %f / %f / %f", linearVelocity.x, linearVelocity.y, linearVelocity.z);
+		//Log(L"ReportControllerState angularVelocity %f / %f / %f", angularVelocity.x, angularVelocity.y, angularVelocity.z);
+		//Log(L"pos: %f V: %f AngV: %f", controllerPosition.x, linearVelocity.x, angularVelocity.x);
+
 		m_pose.qRotation = controllerRotation;
 
-		m_pose.vecPosition[0] = controllerPosition.x;
-		m_pose.vecPosition[1] = controllerPosition.y;
-		m_pose.vecPosition[2] = controllerPosition.z;
+		m_pose.vecPosition[0] = NotNaN(controllerPosition.x);
+		m_pose.vecPosition[1] = NotNaN(controllerPosition.y);
+		m_pose.vecPosition[2] = NotNaN(controllerPosition.z);
 
-		m_pose.vecVelocity[0] = linearVelocity.x;
-		m_pose.vecVelocity[1] = linearVelocity.y;
-		m_pose.vecVelocity[2] = linearVelocity.z;
+		m_pose.vecVelocity[0] = NotNaN(linearVelocity.x);
+		m_pose.vecVelocity[1] = NotNaN(linearVelocity.y);
+		m_pose.vecVelocity[2] = NotNaN(linearVelocity.z);
 
-		m_pose.vecAngularVelocity[0] = angularVelocity.x;
-		m_pose.vecAngularVelocity[1] = angularVelocity.y;
-		m_pose.vecAngularVelocity[2] = angularVelocity.z;
+		m_pose.vecAngularVelocity[0] = NotNaN(angularVelocity.x);
+		m_pose.vecAngularVelocity[1] = NotNaN(angularVelocity.y);
+		m_pose.vecAngularVelocity[2] = NotNaN(angularVelocity.z);
 
 		m_pose.poseTimeOffset = 0;
 

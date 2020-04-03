@@ -68,6 +68,9 @@ struct TrackingQuat {
 	float y;
 	float z;
 	float w;
+	TrackingQuat() {
+		w = 1;
+	}
 };
 struct TrackingVector3 {
 	float x;

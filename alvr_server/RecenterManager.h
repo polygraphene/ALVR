@@ -6,6 +6,9 @@
 #include "FreePIE.h"
 #include "RemoteController.h"
 
+#include "SimpleMath.h"
+using namespace DirectX::SimpleMath;
+
 class RecenterManager
 {
 public:
@@ -136,6 +139,8 @@ public:
 			m_fixedPositionController.x = (float) data.controller_position[0][0];
 			m_fixedPositionController.y = (float) data.controller_position[0][1];
 			m_fixedPositionController.z = (float) data.controller_position[0][2];
+
+			//Log(L"FreePIE controller_position %f / %f / %f", m_fixedPositionController.x, m_fixedPositionController.y, m_fixedPositionController.z);
 		}
 
 		if (Settings::Instance().m_EnableOffsetPos) {
@@ -226,7 +231,7 @@ private:
 		auto data = m_freePIE->GetData();
 		bool enableControllerButton = data.flags & FreePIE::ALVR_FREEPIE_FLAG_OVERRIDE_BUTTONS;
 		m_controllerDetected = data.controllers;
-
+		//Log(L"UpdateControllerState controllersCount %I", m_controllerDetected);
 		// Add controller as specified.
 		for (int i = 0; i < m_controllerDetected; i++) {
 			if (m_remoteControllers[i]) {
@@ -257,20 +262,44 @@ private:
 			if (m_remoteControllers[0]) {
 
 				TrackingVector3 newVelocity = CalculateVelocity(m_fixedPositionController, m_LastControllerPosition[0], deltaTime);
-
+				//Log(L"newVelocity.x %f = (%f - %f) * %f", newVelocity, m_fixedPositionController.x, m_LastControllerPosition[0].x, deltaTime);
+				#//if (!isnan(newVelocity.x) && !isnan(newVelocity.y) && !isnan(newVelocity.z))
 				linearVelocity[0] = TrackingVector3::lerp(linearVelocity[0], newVelocity, LERP_VELOCITY_PER_FRAME);//lerp(linearVelocity[0].x, newVelocity.x, 60 * deltaTime);
 				
 				double eulerAngles[3];
 
 				QuaternionToEulerAngle(m_fixedOrientationController, eulerAngles);
 
-				TrackingVector3 currentRotation = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
+				//TrackingVector3 currentRotation = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
 
-				TrackingVector3 newAngularVelocity = (currentRotation - lastRotationEuler[0]) / deltaTime;
-
-				angularVelocity[0] = TrackingVector3::lerp(angularVelocity[0], newAngularVelocity, LERP_ANGLE_PER_FRAME);
+				//TrackingVector3 newAngularVelocity = (currentRotation - lastRotationEuler[0]) / deltaTime;
 
 				double euler[3] = { lastRotationEuler[0].x, lastRotationEuler[0].y, lastRotationEuler[0].z };
+
+				Quaternion controllerRotation = Quaternion(m_fixedOrientationController.x, m_fixedOrientationController.y, m_fixedOrientationController.z, m_fixedOrientationController.w);
+				Quaternion lastRotationInverse;
+				lastRotation.Inverse(lastRotationInverse);
+				Quaternion deltaRotation = lastRotationInverse * controllerRotation;
+
+				lastRotation = controllerRotation;
+
+				vr::HmdQuaternion_t deltaRotationQ;
+				deltaRotationQ.x = deltaRotation.x;
+				deltaRotationQ.y = deltaRotation.y;
+				deltaRotationQ.z = deltaRotation.z;
+				deltaRotationQ.w = deltaRotation.w;
+
+				double deltaRotationEuler[3];
+
+				QuaternionToEulerAngle(deltaRotationQ, deltaRotationEuler);
+
+				TrackingVector3 newAngularVelocity = TrackingVector3(deltaRotationEuler[0] / deltaTime, deltaRotationEuler[1] / deltaTime, deltaRotationEuler[2] / deltaTime);
+
+				newAngularVelocity.x = clamp(newAngularVelocity.x, -1.0f, 1.0f);
+				newAngularVelocity.y = clamp(newAngularVelocity.y, -1.0f, 1.0f);
+				newAngularVelocity.z = clamp(newAngularVelocity.z, -1.0f, 1.0f);
+
+				angularVelocity[0] = TrackingVector3::lerp(angularVelocity[0], newAngularVelocity, LERP_ANGLE_PER_FRAME);
 
 				bool recenterRequested = m_remoteControllers[0]->ReportControllerState(info, EulerAngleToQuaternion(euler), m_LastControllerPosition[0], linearVelocity[0], angularVelocity[0], enableControllerButton, data);
 
@@ -341,9 +370,11 @@ private:
 
 	static const int RECENTER_DURATION = 400 * 1000;
 
-	TrackingVector3 lastRotationEuler[2];
-	TrackingVector3 m_LastControllerPosition[2];
-	TrackingVector3 linearVelocity[2];
-	TrackingVector3 angularVelocity[2];
+	TrackingVector3 lastRotationEuler[2] = { TrackingVector3(0,0,0), TrackingVector3(0,0,0) };
+	Quaternion lastRotation = Quaternion::Identity;
+	TrackingVector3 linearVelocity[2] = { TrackingVector3(0,0,0), TrackingVector3(0,0,0) };
+	TrackingVector3 angularVelocity[2] = { TrackingVector3(0,0,0), TrackingVector3(0,0,0) };
+	TrackingVector3 m_LastControllerPosition[2] = { TrackingVector3(0,0,0), TrackingVector3(0,0,0) };
+	
 	clock_t mlastUpdateTime = 0;
 };

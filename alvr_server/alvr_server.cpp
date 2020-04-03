@@ -1091,7 +1091,15 @@ public:
 				info.clientTime = GetTimestampUs();
 				info.FrameIndex = 0;
 				info.predictedDisplayTime = GetTimestampUs();
-
+				info.controller_Pose_Position = TrackingVector3(0, 0, -0.5);
+				info.controller_Pose_Orientation = TrackingQuat();
+				info.HeadPose_Pose_Position = TrackingVector3(0, 0, 0);
+				info.HeadPose_Pose_Orientation = TrackingQuat();
+				info.controllerBatteryPercentRemaining = 100;
+				info.controller_LinearVelocity = TrackingVector3(0, 0, 0);
+				info.controller_AngularVelocity = TrackingVector3(0, 0, 0);
+				info.controller_LinearAcceleration = TrackingVector3(0, 0, 0);
+				info.controller_AngularAcceleration = TrackingVector3(0, 0, 0);
 				m_Listener->UpdateLastSeen();
 
 				// Don't stop the update with fake tracking info
