@@ -116,10 +116,10 @@ def rotatevec(yaw_pitch_roll, vec):
 #	Main Program
 #----------------------------------------------------------------------------
 
-global timestamp, buttonsUpdateTime, forwardOrientation, controllerOffsetX, controllerOffsetY, controllerOffsetZ, leftClick, rightClick, isCrouch, touchX, touchY
+global timestamp, buttonsUpdateTime, forwardOrientation, controllerOffsetX, controllerOffsetY, controllerOffsetZ, leftClick, rightClick, isCrouch, touchX, touchY, lastTouchTime
 
 #ControllerPivotVector - placed at the right eye for better aiming
-defaultPivotX = 0.033
+defaultPivotX = -0.038
 defaultPivotY = 0
 defaultPivotZ = -0.5
 
@@ -136,6 +136,7 @@ if starting:
 	#controllerPivotVector = [defaultPivotX,defaultPivotY,defaultPivotZ]
 	buttonsUpdateTime = 0
 	forwardOrientation = [0,0,0]
+	lastTouchTime = 0
 
 deltaTime = time.time() - timestamp
 
@@ -173,7 +174,7 @@ if (deltaTime > 0.0):
 	targetOrientation = [alvr.head_orientation[0], alvr.head_orientation[1], alvr.head_orientation[2]]
 	if (mouse.rightButton):
 		controllerOffsetX = lerp(controllerOffsetX, 0.2, 2 * deltaTime)
-		controllerOffsetY = lerp(controllerOffsetY, 0.2, 2 * deltaTime)
+		controllerOffsetY = lerp(controllerOffsetY, 0.0, 2 * deltaTime)
 		controllerOffsetZ = lerp(controllerOffsetZ, 0.2, 2 * deltaTime)
 		targetOrientation[2] += math.radians(160)
 		rightClick = True
@@ -193,14 +194,16 @@ if (deltaTime > 0.0):
 	controllerOffsetZ -= mouse.wheel * 0.001
 	diagnostics.watch(mouseX), diagnostics.watch(mouseY)
 
-	if (not leftClick and not rightClick and not mouse.wheel):
-		controllerOffsetX = clamp(controllerOffsetX, -0.4, 0.4)
-		controllerOffsetY = clamp(controllerOffsetY, -0.4, 0.4)
-		#controllerOffsetZ = clamp(controllerOffsetZ, -0.4, 0.6)
+	if (leftClick or rightClick or mouse.wheel):
+		lastTouchTime = time.time()
+
+	controllerOffsetX = clamp(controllerOffsetX, -0.4, 0.4)
+	controllerOffsetY = clamp(controllerOffsetY, -0.4, 0.4)
+	#controllerOffsetZ = clamp(controllerOffsetZ, -0.4, 0.6)
 	
 	
 	# Reset hand position
-	if ( not rightClick):
+	if ( not leftClick and not rightClick and not mouse.wheel and (time.time() - lastTouchTime) > 0.4 ):
 		controllerOffsetX = lerp(controllerOffsetX, 0, 2 * deltaTime)
 		controllerOffsetY = lerp(controllerOffsetX, 0, 2 * deltaTime)
 		controllerOffsetZ = lerp(controllerOffsetZ, 0, 2 * deltaTime)
@@ -231,7 +234,7 @@ if (deltaTime > 0.0):
 
 	rot = alvr.controller_orientation[0]
 	rot[0] = lerp(rot[0], forwardOrientation[0], 0.2)
-	rot[1] = lerp(rot[1], forwardOrientation[1] + math.radians(-8), 0.2)
+	rot[1] = lerp(rot[1], forwardOrientation[1] + math.radians(0), 0.2)
 	rot[2] = lerp(rot[2], forwardOrientation[2] + math.radians(58), 0.2)
 	
 	# Controller position
@@ -259,7 +262,7 @@ if (buttonsUpdateTime >= 0.02):
 
 	alvr.buttons[0][alvr.Id("system")] = keyboard.getKeyDown(Key.Q)
 	
-	alvr.buttons[0][alvr.Id("application_menu")] = mouse.middleButton
+	alvr.buttons[0][alvr.Id("application_menu")] = keyboard.getKeyDown(Key.F) or mouse.middleButton
 	
 	# Controller buttons
 	
@@ -271,14 +274,8 @@ if (buttonsUpdateTime >= 0.02):
 	
 	alvr.trackpad[0]
 	
-	# Hold touchpad down and pull the trigger to activate 'Grip' button
-	
 	triggerPulledNow = leftClick
 	
 	alvr.buttons[0][alvr.Id("grip")] = keyboard.getKeyDown(Key.R)
-	#if (rightClick):
-		#alvr.buttons[0][alvr.Id("grip")] = mouseBtnBack
-	#else:	
-		#alvr.buttons[0][alvr.Id("grip")] = keyboard.getKeyDown(Key.Space)
 		
 	alvr.trigger[0] = triggerPulledNow
