@@ -119,7 +119,7 @@ def rotatevec(yaw_pitch_roll, vec):
 global timestamp, buttonsUpdateTime, forwardOrientation, controllerOffsetX, controllerOffsetY, controllerOffsetZ, leftClick, rightClick, isCrouch, touchX, touchY, lastTouchTime
 
 #ControllerPivotVector - placed at the right eye for better aiming
-defaultPivotX = -0.038
+defaultPivotX = -0.0421
 defaultPivotY = 0
 defaultPivotZ = -0.5
 
@@ -153,12 +153,17 @@ if (deltaTime > 0.0):
 	
 	touchX = 0
 	touchY = 0
-	if (mouseBtnFwd):
+	if (mouseBtnFwd or keyboard.getKeyDown(Key.UpArrow)):
 		touchY = 1
-	elif (mouseBtnBack):
+	elif (mouseBtnBack or keyboard.getKeyDown(Key.DownArrow)):
 		touchY = -1
 	else:
 		touchY = 0
+		
+	if (keyboard.getKeyDown(Key.LeftArrow)):
+		touchX = -1
+	elif (keyboard.getKeyDown(Key.RightArrow)):
+		touchX = 1
 
 	alvr.trackpad[0][0] = touchX
 	alvr.trackpad[0][1] = touchY
@@ -169,13 +174,23 @@ if (deltaTime > 0.0):
 	keyboardX = (keyboard.getKeyDown(Key.D) * 1.0 - keyboard.getKeyDown(Key.A) * 1.0)
 	keyboardY = (keyboard.getKeyDown(Key.W) * 1.0 - keyboard.getKeyDown(Key.S) * 1.0)
 
+	alvr.two_controllers = True
+
+	alvr.trackpad[1][0] = keyboardX
+	alvr.trackpad[1][1] = keyboardY
+	
+	leftTrackPadClick = keyboardX != 0 or keyboardY != 0
+		
+	alvr.buttons[1][alvr.Id("trackpad_touch")] = leftTrackPadClick
+	alvr.buttons[1][alvr.Id("trackpad_click")] = leftTrackPadClick
+	
 	diagnostics.watch(keyboardX), diagnostics.watch(keyboardY)
 	
 	targetOrientation = [alvr.head_orientation[0], alvr.head_orientation[1], alvr.head_orientation[2]]
 	if (mouse.rightButton):
-		controllerOffsetX = lerp(controllerOffsetX, 0.2, 2 * deltaTime)
-		controllerOffsetY = lerp(controllerOffsetY, 0.0, 2 * deltaTime)
-		controllerOffsetZ = lerp(controllerOffsetZ, 0.2, 2 * deltaTime)
+		controllerOffsetX = lerp(controllerOffsetX, 0.2, 6 * deltaTime)
+		controllerOffsetY = lerp(controllerOffsetY, 0.2, 6 * deltaTime)
+		controllerOffsetZ = lerp(controllerOffsetZ, 0.1, 6 * deltaTime)
 		targetOrientation[2] += math.radians(160)
 		rightClick = True
 	else:
@@ -184,14 +199,14 @@ if (deltaTime > 0.0):
 	
 	leftClick = mouse.leftButton
 
-	forwardOrientation[0] = moveTowards(forwardOrientation[0], targetOrientation[0], 50 * deltaTime)
-	forwardOrientation[1] = moveTowards(forwardOrientation[1], targetOrientation[1], 50 * deltaTime)
-	forwardOrientation[2] = moveTowards(forwardOrientation[2], targetOrientation[2], 5 * deltaTime)
+	forwardOrientation[0] = moveTowards(forwardOrientation[0], targetOrientation[0], 30 * deltaTime)
+	forwardOrientation[1] = moveTowards(forwardOrientation[1], targetOrientation[1], 30 * deltaTime)
+	forwardOrientation[2] = moveTowards(forwardOrientation[2], targetOrientation[2], 4 * deltaTime)
 	
 	mouseX = mouse.deltaX * 0.001
 	mouseY = mouse.deltaY * 0.001
 	
-	controllerOffsetZ -= mouse.wheel * 0.001
+	controllerOffsetZ -= mouse.wheel * 0.3 * deltaTime
 	diagnostics.watch(mouseX), diagnostics.watch(mouseY)
 
 	if (leftClick or rightClick or mouse.wheel):
@@ -199,14 +214,13 @@ if (deltaTime > 0.0):
 
 	controllerOffsetX = clamp(controllerOffsetX, -0.4, 0.4)
 	controllerOffsetY = clamp(controllerOffsetY, -0.4, 0.4)
-	#controllerOffsetZ = clamp(controllerOffsetZ, -0.4, 0.6)
-	
+	controllerOffsetZ = clamp(controllerOffsetZ, -0.9, 0.7)
 	
 	# Reset hand position
 	if ( not leftClick and not rightClick and not mouse.wheel and (time.time() - lastTouchTime) > 0.4 ):
 		controllerOffsetX = lerp(controllerOffsetX, 0, 2 * deltaTime)
 		controllerOffsetY = lerp(controllerOffsetX, 0, 2 * deltaTime)
-		controllerOffsetZ = lerp(controllerOffsetZ, 0, 2 * deltaTime)
+		#controllerOffsetZ = lerp(controllerOffsetZ, 0, 2 * deltaTime)
 	
 	# Head offset and crouching
 	
@@ -222,7 +236,7 @@ if (deltaTime > 0.0):
 		headOffset[1] = 0.0
 	
 	alvr.head_position[0] = 0
-	alvr.head_position[1] = lerp(alvr.head_position[1], headOffset[1], 20 * deltaTime)
+	alvr.head_position[1] = lerp(alvr.head_position[1], headOffset[1], 10 * deltaTime)
 	alvr.head_position[2] = 0
 
 	alvr.override_head_orientation = True
@@ -250,9 +264,23 @@ if (deltaTime > 0.0):
 	
 	desiredControllerPosition = add(controllerPivotVector, controllerOffsetVector)
 	
-	alvr.controller_position[0][0] = lerp(alvr.controller_position[0][0], desiredControllerPosition[0], 0.9)
-	alvr.controller_position[0][1] = lerp(alvr.controller_position[0][1], desiredControllerPosition[1] + headOffset[1], 0.9)
-	alvr.controller_position[0][2] = lerp(alvr.controller_position[0][2], desiredControllerPosition[2], 0.9)
+	desiredControllerPosition[1] += headOffset[1]
+	
+	alvr.controller_position[0][0] = lerp(alvr.controller_position[0][0], desiredControllerPosition[0], 30 * deltaTime)
+	alvr.controller_position[0][1] = lerp(alvr.controller_position[0][1], desiredControllerPosition[1], 30 * deltaTime)
+	alvr.controller_position[0][2] = lerp(alvr.controller_position[0][2], desiredControllerPosition[2], 30 * deltaTime)
+	
+	desiredControllerPositionLeft = add(desiredControllerPosition, rotatevec( [forwardOrientation[0], forwardOrientation[1], forwardOrientation[2]], [-0.02, -0.15, 0,0] ) )
+	
+	alvr.controller_position[1][0] = lerp(alvr.controller_position[1][0], desiredControllerPositionLeft[0], 30 * deltaTime)
+	alvr.controller_position[1][1] = lerp(alvr.controller_position[1][1], desiredControllerPositionLeft[1], 30 * deltaTime)
+	alvr.controller_position[1][2] = lerp(alvr.controller_position[1][2], desiredControllerPositionLeft[2], 30 * deltaTime)
+	
+	alvr.controller_orientation[1][0] = alvr.controller_orientation[0][0] 
+	alvr.controller_orientation[1][1] = alvr.controller_orientation[0][1]
+	alvr.controller_orientation[1][2] = alvr.controller_orientation[0][2] - math.radians(58)
+	
+	alvr.trigger[1] = keyboard.getKeyDown(Key.E)
 	
 if (buttonsUpdateTime >= 0.02):
 
@@ -266,7 +294,7 @@ if (buttonsUpdateTime >= 0.02):
 	
 	# Controller buttons
 	
-	trackpadClickNow = (not rightClick and (mouseBtnFwd or mouseBtnBack))
+	trackpadClickNow = (not rightClick and (mouseBtnFwd or mouseBtnBack or touchX != 0))
 	
 	alvr.buttons[0][alvr.Id("trackpad_click")] = trackpadClickNow
 	
@@ -274,8 +302,14 @@ if (buttonsUpdateTime >= 0.02):
 	
 	alvr.trackpad[0]
 	
+	# Hold touchpad down and pull the trigger to activate 'Grip' button
+	
 	triggerPulledNow = leftClick
 	
 	alvr.buttons[0][alvr.Id("grip")] = keyboard.getKeyDown(Key.R)
+	#if (rightClick):
+		#alvr.buttons[0][alvr.Id("grip")] = mouseBtnBack
+	#else:	
+		#alvr.buttons[0][alvr.Id("grip")] = keyboard.getKeyDown(Key.Space)
 		
 	alvr.trigger[0] = triggerPulledNow

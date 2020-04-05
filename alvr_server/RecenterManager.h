@@ -220,42 +220,50 @@ private:
 		return RotateVectorQuaternion_scale(1.0f / deltaTime, RotateVectorQuaternion_sub(newPosition, oldPosition));
 	}
 
-	const float LERP_VELOCITY_PER_FRAME = 0.1f;
+	static float moveTowards(float a, float b, float maxStep)
+	{
+		return a + clamp(b - a, -maxStep, maxStep);
+	}
 
-	const float LERP_ANGLE_PER_FRAME = 0.1f;
+	static TrackingVector3 moveTowards(TrackingVector3 a, TrackingVector3 b, float maxStep) {
+		return TrackingVector3( moveTowards(a.x, b.x, maxStep), moveTowards(a.y, b.y, maxStep), moveTowards(a.z, b.z, maxStep));
+	}
 
 	void UpdateControllerState(const TrackingInfo& info) {
 		if (!Settings::Instance().m_enableController) {
 			return;
 		}
-		auto data = m_freePIE->GetData();
-		bool enableControllerButton = data.flags & FreePIE::ALVR_FREEPIE_FLAG_OVERRIDE_BUTTONS;
-		m_controllerDetected = data.controllers;
-		//Log(L"UpdateControllerState controllersCount %I", m_controllerDetected);
-		// Add controller as specified.
-		for (int i = 0; i < m_controllerDetected; i++) {
-			if (m_remoteControllers[i]) {
-				// Already enabled.
-				continue;
-			}
-			// false: right hand, true: left hand
-			bool handed = (info.flags & TrackingInfo::FLAG_CONTROLLER_LEFTHAND) != 0;
-			if (i == 1) {
-				handed = !handed;
-			}
-			m_remoteControllers[i] = std::make_shared<RemoteControllerServerDriver>(handed, i);
-
-			bool ret = vr::VRServerDriverHost()->TrackedDeviceAdded(
-				m_remoteControllers[i]->GetSerialNumber().c_str(),
-				vr::TrackedDeviceClass_Controller,
-				m_remoteControllers[i].get());
-			Log(L"TrackedDeviceAdded vr::TrackedDeviceClass_Controller index=%d Ret=%d SerialNumber=%hs"
-				, i, ret, m_remoteControllers[i]->GetSerialNumber().c_str());
-		}
-
 		float deltaTime = float(clock() - mlastUpdateTime) / CLOCKS_PER_SEC;
 
-		if (deltaTime > 0.0f) {
+		if (deltaTime >= 0.005f) 
+		{
+			auto data = m_freePIE->GetData();
+			bool enableControllerButton = data.flags & FreePIE::ALVR_FREEPIE_FLAG_OVERRIDE_BUTTONS;
+			m_controllerDetected = data.controllers;
+			//Log(L"UpdateControllerState controllersCount %I", m_controllerDetected);
+			// Add controller as specified.
+			for (int i = 0; i < m_controllerDetected; i++) {
+				if (m_remoteControllers[i]) {
+					// Already enabled.
+					continue;
+				}
+				// false: right hand, true: left hand
+				bool handed = (info.flags & TrackingInfo::FLAG_CONTROLLER_LEFTHAND) != 0;
+				if (i == 1) {
+					handed = !handed;
+				}
+				m_remoteControllers[i] = std::make_shared<RemoteControllerServerDriver>(handed, i);
+
+				bool ret = vr::VRServerDriverHost()->TrackedDeviceAdded(
+					m_remoteControllers[i]->GetSerialNumber().c_str(),
+					vr::TrackedDeviceClass_Controller,
+					m_remoteControllers[i].get());
+				Log(L"TrackedDeviceAdded vr::TrackedDeviceClass_Controller index=%d Ret=%d SerialNumber=%hs"
+					, i, ret, m_remoteControllers[i]->GetSerialNumber().c_str());
+			}
+
+			float speedLerp = 10.0f * deltaTime;
+			float angularSpeedLerp = 15 * deltaTime;
 
 			mlastUpdateTime = clock();
 
@@ -264,7 +272,7 @@ private:
 				TrackingVector3 newVelocity = CalculateVelocity(m_fixedPositionController, m_LastControllerPosition[0], deltaTime);
 				//Log(L"newVelocity.x %f = (%f - %f) * %f", newVelocity, m_fixedPositionController.x, m_LastControllerPosition[0].x, deltaTime);
 				#//if (!isnan(newVelocity.x) && !isnan(newVelocity.y) && !isnan(newVelocity.z))
-				linearVelocity[0] = TrackingVector3::lerp(linearVelocity[0], newVelocity, LERP_VELOCITY_PER_FRAME);//lerp(linearVelocity[0].x, newVelocity.x, 60 * deltaTime);
+				linearVelocity[0] = TrackingVector3::lerp(linearVelocity[0], newVelocity, speedLerp);//lerp(linearVelocity[0].x, newVelocity.x, 60 * deltaTime);
 				
 				double eulerAngles[3];
 
@@ -299,7 +307,7 @@ private:
 				newAngularVelocity.y = clamp(newAngularVelocity.y, -1.0f, 1.0f);
 				newAngularVelocity.z = clamp(newAngularVelocity.z, -1.0f, 1.0f);
 
-				angularVelocity[0] = TrackingVector3::lerp(angularVelocity[0], newAngularVelocity, LERP_ANGLE_PER_FRAME);
+				angularVelocity[0] = TrackingVector3::lerp(angularVelocity[0], newAngularVelocity, angularSpeedLerp);
 
 				bool recenterRequested = m_remoteControllers[0]->ReportControllerState(info, EulerAngleToQuaternion(euler), m_LastControllerPosition[0], linearVelocity[0], angularVelocity[0], enableControllerButton, data);
 
@@ -327,13 +335,13 @@ private:
 
 				TrackingVector3 newAngularVelocity = (currentRotation - lastRotationEuler[1]) / deltaTime;
 
-				angularVelocity[1] = TrackingVector3::lerp(angularVelocity[1], newAngularVelocity, LERP_ANGLE_PER_FRAME);
+				angularVelocity[1] = TrackingVector3::lerp(angularVelocity[1], newAngularVelocity, angularSpeedLerp);
 
 				vr::HmdQuaternion_t controllerOrientation = EulerAngleToQuaternion(eulerAngles);
 
 				TrackingVector3 newVelocity = CalculateVelocity(positionController1, m_LastControllerPosition[1], deltaTime);
 
-				linearVelocity[1] = TrackingVector3::lerp(linearVelocity[1], newVelocity, LERP_VELOCITY_PER_FRAME);
+				linearVelocity[1] = TrackingVector3::lerp(linearVelocity[1], newVelocity, speedLerp);
 
 				double euler[3] = { eulerAngles[0], eulerAngles[1], eulerAngles[2] };
 
