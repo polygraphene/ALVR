@@ -224,7 +224,7 @@ class DisplayComponent : public vr::IVRDisplayComponent
 public:
 	DisplayComponent() {}
 	virtual ~DisplayComponent() {}
-
+	bool isFakeDisplay = true;
 	virtual void GetWindowBounds(int32_t *pnX, int32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight) override
 	{
 		Log(L"GetWindowBounds %dx%d - %dx%d", 0, 0, Settings::Instance().m_renderWidth, Settings::Instance().m_renderHeight);
@@ -270,10 +270,19 @@ public:
 
 	virtual void GetProjectionRaw(vr::EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom) override
 	{
-		*pfLeft = -1.0;
-		*pfRight = 1.0;
-		*pfTop = -1.0;
-		*pfBottom = 1.0;
+		if (isFakeDisplay) {
+
+			*pfLeft = -2.144;
+			*pfRight = 2.144;
+			*pfTop = -2.144;
+			*pfBottom = 2.144;
+		}
+		{
+			*pfLeft = -1.0;
+			*pfRight = 1.0;
+			*pfTop = -1.0;
+			*pfBottom = 1.0;
+		}
 
 		Log(L"GetProjectionRaw %d", eEye);
 	}
@@ -815,6 +824,9 @@ public:
 		// return a constant that's not 0 (invalid) or 1 (reserved for Oculus)
 		vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, vr::Prop_CurrentUniverseId_Uint64, 2);
 
+		//disable debug mode to unlock framerate
+		vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, vr::Prop_DisplayDebugMode_Bool, false);
+
 		// avoid "not fullscreen" warnings from vrmonitor
 		vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, vr::Prop_IsOnDesktop_Bool, false);
 
@@ -1082,6 +1094,7 @@ public:
 		if (m_unObjectId != vr::k_unTrackedDeviceIndexInvalid)
 		{
 			isFake = !m_Listener->IsConnected();
+			m_displayComponent->isFakeDisplay = isFake;
 
 			TrackingInfo info;
 			if (!m_Listener->HasValidTrackingInfo()) {
