@@ -262,6 +262,7 @@ namespace ALVR
 
                 metroProgressSpinner1.Hide();
                 startServerButton.Hide();
+                fakeHeadsetButton.Enabled = false;
             }
             else
             {
@@ -274,6 +275,7 @@ namespace ALVR
 
                 metroProgressSpinner1.Show();
                 startServerButton.Show();
+                fakeHeadsetButton.Enabled = true;
             }
         }
 
@@ -455,6 +457,11 @@ namespace ALVR
             await socket.SendCommand("SetOffsetPos " + (offsetPosCheckBox.Checked ? "1" : "0") + " " + offsetPosXTextBox.Text + " " + offsetPosYTextBox.Text + " " + offsetPosZTextBox.Text);
         }
 
+        async private Task SendFOV()
+        {
+            await socket.SendCommand("SendFOV");
+        }
+
         private void UpdateConnectionState(bool connected, string args = "")
         {
             if (!previousConnectionState && connected)
@@ -544,6 +551,11 @@ namespace ALVR
         async private void sendOffsetPos_Click(object sender, EventArgs e)
         {
             await SendOffsetPos();
+        }
+
+        async private void sendFOV_Click(object sender, EventArgs e)
+        {
+            await SendFOV();
         }
 
         private void bitrateTrackBar_ValueChanged(object sender, EventArgs e)
@@ -724,6 +736,11 @@ namespace ALVR
         private void defaultSoundDeviceCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             UpdateSoundCheckboxState();
+        }
+
+        async private void metroButton3_Click(object sender, EventArgs e)
+        {
+            await SendFOV();
         }
     }
 }

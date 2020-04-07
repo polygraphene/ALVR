@@ -189,19 +189,27 @@ if (deltaTime > 0.0):
 	targetOrientation = [alvr.head_orientation[0], alvr.head_orientation[1], alvr.head_orientation[2]]
 	if (mouse.rightButton):
 		controllerOffsetX = lerp(controllerOffsetX, 0.2, 6 * deltaTime)
-		controllerOffsetY = lerp(controllerOffsetY, 0.2, 6 * deltaTime)
-		controllerOffsetZ = lerp(controllerOffsetZ, 0.1, 6 * deltaTime)
+		controllerOffsetY = lerp(controllerOffsetY, 0.4, 6 * deltaTime)
+		controllerOffsetZ = lerp(controllerOffsetZ, 0.4, 6 * deltaTime)
 		targetOrientation[2] += math.radians(160)
 		rightClick = True
 	else:
 		if (rightClick):
+			controllerOffsetX = 0
+			controllerOffsetY = 0
+			controllerOffsetZ = 0
 			rightClick = False
+		else:
+			controllerOffsetX = clamp(controllerOffsetX, -0.4, 0.4)
+			controllerOffsetY = clamp(controllerOffsetY, -0.4, 0.4)
+			controllerOffsetZ = clamp(controllerOffsetZ, -0.9, 0.4)
+	
 	
 	leftClick = mouse.leftButton
 
 	forwardOrientation[0] = moveTowards(forwardOrientation[0], targetOrientation[0], 30 * deltaTime)
 	forwardOrientation[1] = moveTowards(forwardOrientation[1], targetOrientation[1], 30 * deltaTime)
-	forwardOrientation[2] = moveTowards(forwardOrientation[2], targetOrientation[2], 4 * deltaTime)
+	forwardOrientation[2] = moveTowards(forwardOrientation[2], targetOrientation[2], 8 * deltaTime)
 	
 	mouseX = mouse.deltaX * 0.001
 	mouseY = mouse.deltaY * 0.001
@@ -212,9 +220,6 @@ if (deltaTime > 0.0):
 	if (leftClick or rightClick or mouse.wheel):
 		lastTouchTime = time.time()
 
-	controllerOffsetX = clamp(controllerOffsetX, -0.4, 0.4)
-	controllerOffsetY = clamp(controllerOffsetY, -0.4, 0.4)
-	controllerOffsetZ = clamp(controllerOffsetZ, -0.9, 0.7)
 	
 	# Reset hand position
 	if ( not leftClick and not rightClick and not mouse.wheel and (time.time() - lastTouchTime) > 0.4 ):
@@ -257,6 +262,9 @@ if (deltaTime > 0.0):
 	
 	# Local vector from controller pivot
 	controllerOffsetVector = rotatevec(forwardOrientation, [controllerOffsetX, controllerOffsetY, controllerOffsetZ,0])
+	
+	if (mouse.rightButton):
+		controllerOffsetVector[1] = 0
 	
 	diagnostics.watch(controllerOffsetVector[0]), diagnostics.watch(controllerOffsetVector[1]), diagnostics.watch(controllerOffsetVector[2]);
 	

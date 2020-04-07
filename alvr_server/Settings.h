@@ -54,6 +54,7 @@ static const char * const k_pch_Settings_ControllerBackMode_Int32 = "controllerB
 static const char * const k_pch_Settings_ControllerRecenterButton_Int32 = "controllerRecenterButton";
 
 static const char * const k_pch_Settings_UseTrackingReference_Bool = "useTrackingReference";
+static const char* const k_pch_Settings_noVR_Bool = "noVR";
 
 static const char * const k_pch_Settings_EnableOffsetPos_Bool = "enableOffsetPos";
 static const char * const k_pch_Settings_OffsetPosX_Float = "offsetPosX";
@@ -78,6 +79,7 @@ class Settings
 	virtual ~Settings();
 
 public:
+
 	void Load();
 	static Settings &Instance() {
 		return m_Instance;
@@ -153,6 +155,7 @@ public:
 	int32_t m_causePacketLoss;
 
 	bool m_useTrackingReference;
+	bool m_noVR;
 
 	int32_t m_trackingFrameOffset;
 

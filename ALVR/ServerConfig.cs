@@ -171,6 +171,8 @@ namespace ALVR
                 driverConfig.controllerRecenterButton = Properties.Settings.Default.controllerRecenterButton;
                 driverConfig.useTrackingReference = Properties.Settings.Default.useTrackingReference;
 
+                driverConfig.noVR = Properties.Settings.Default.noVR;
+
                 driverConfig.enableOffsetPos = Properties.Settings.Default.useOffsetPos;
                 driverConfig.offsetPosX = Utils.ParseFloat(Properties.Settings.Default.offsetPosX);
                 driverConfig.offsetPosY = Utils.ParseFloat(Properties.Settings.Default.offsetPosY);

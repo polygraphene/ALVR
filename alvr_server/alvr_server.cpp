@@ -244,11 +244,44 @@ public:
 		return false;
 	}
 
+	void GetDesktopResolution(uint32_t& horizontal, uint32_t& vertical)
+	{
+		RECT desktop;
+		// Get a handle to the desktop window
+		const HWND hDesktop = GetDesktopWindow();
+		// Get the size of screen to the variable desktop
+		GetWindowRect(hDesktop, &desktop);
+		// The top left corner will have coordinates (0,0)
+		// and the bottom right corner will have coordinates
+		// (horizontal, vertical)
+		horizontal = desktop.right;
+		vertical = desktop.bottom;
+	}
+
+	uint32_t* recommendedRenderWidthPtr;
+	uint32_t* recommendedRenderHeightPtr;
+
 	virtual void GetRecommendedRenderTargetSize(uint32_t *pnWidth, uint32_t *pnHeight) override
 	{
-		*pnWidth = Settings::Instance().m_renderWidth / 2;
-		*pnHeight = Settings::Instance().m_renderHeight;
+		recommendedRenderWidthPtr = pnWidth;
+
+		recommendedRenderHeightPtr = pnHeight;
+		
+		GetDesktopResolution(*pnWidth, *pnHeight);
+
+		//*pnWidth = Settings::Instance().m_renderWidth / 2;
+		//*pnHeight = Settings::Instance().m_renderHeight;
+		
 		Log(L"GetRecommendedRenderTargetSize %dx%d", *pnWidth, *pnHeight);
+	}
+
+	void SetRecommendedRenderTargetSize(uint32_t pnWidth, uint32_t pnHeight) 
+	{
+		*recommendedRenderWidthPtr = pnWidth;
+
+		*recommendedRenderHeightPtr = pnHeight;
+
+		Log(L"SetRecommendedRenderTargetSize %dx%d", pnWidth, pnHeight);
 	}
 
 	virtual void GetEyeOutputViewport(vr::EVREye eEye, uint32_t *pnX, uint32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight) override
@@ -266,15 +299,65 @@ public:
 			*pnX = Settings::Instance().m_renderWidth / 2;
 		}
 		Log(L"GetEyeOutputViewport %d %dx%d %dx%d", eEye, *pnX, *pnY, *pnWidth, *pnHeight);
+
+	}
+
+	float* r_pfLeftPtr;
+	float* r_pfRightPtr;
+	float* r_pfTopPtr;
+	float* r_pfBottomPtr;
+
+	float* l_pfLeftPtr;
+	float* l_pfRightPtr;
+	float* l_pfTopPtr;
+	float* l_pfBottomPtr;
+
+	void SetProjection(float left = -1.0f, float right = 1.0f, float top = -1.0f, float bottom = 1.0f) {
+		*r_pfLeftPtr = left;
+		*r_pfRightPtr = right;
+		*r_pfTopPtr = top;
+		*r_pfBottomPtr = bottom;
+
+		*l_pfLeftPtr = left;
+		*l_pfRightPtr = right;
+		*l_pfTopPtr = top;
+		*l_pfBottomPtr = bottom;
+
+		Log(L"SetProjection %f %f %f %f", left, right, top, bottom);
 	}
 
 	virtual void GetProjectionRaw(vr::EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom) override
 	{
-		*pfLeft = -1.0;
-		*pfRight = 1.0;
-		*pfTop = -1.0;
-		*pfBottom = 1.0;
-
+		if (eEye == vr::Eye_Right)
+		{
+			r_pfLeftPtr = pfLeft;
+			r_pfRightPtr = pfRight;
+			r_pfTopPtr = pfTop;
+			r_pfBottomPtr = pfBottom;
+		}
+		else 
+		{
+			l_pfLeftPtr = pfLeft;
+			l_pfRightPtr = pfRight;
+			l_pfTopPtr = pfTop;
+			l_pfBottomPtr = pfBottom;
+		}
+		bool noVR = Settings::Instance().m_noVR;
+		Log(noVR ? L"GetProjection noVR = TRUE" : L"GetProjection noVR = FALSE");
+		if (noVR) {
+			Log(L" m_noVR is TRUE! Set custom FOV");
+			//Set FOV
+			*pfLeft = -2.144f;
+			*pfRight = 2.144f;
+			*pfTop = -2.144f;
+			*pfBottom = 2.144f;
+		}
+		else {
+			*pfLeft = -1.0f;
+			*pfRight = 1.0f;
+			*pfTop = -1.0f;
+			*pfBottom = 1.0f;
+		}
 		Log(L"GetProjectionRaw %d", eEye);
 	}
 
@@ -770,8 +853,6 @@ public:
 		m_recenterManager.reset();
 	}
 
-	bool isFake = true;
-
 	std::string GetSerialNumber() const { return Settings::Instance().m_sSerialNumber; }
 	
 	void Enable()
@@ -811,9 +892,10 @@ public:
 		vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, vr::Prop_UserHeadToEyeDepthMeters_Float, 0.f);
 		vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, vr::Prop_DisplayFrequency_Float, Settings::Instance().m_flDisplayFrequency);
 		vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, vr::Prop_SecondsFromVsyncToPhotons_Float, Settings::Instance().m_flSecondsFromVsyncToPhotons);
-
 		// return a constant that's not 0 (invalid) or 1 (reserved for Oculus)
 		vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, vr::Prop_CurrentUniverseId_Uint64, 2);
+
+		vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, vr::Prop_DisplayDebugMode_Bool, false);
 
 		// avoid "not fullscreen" warnings from vrmonitor
 		vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, vr::Prop_IsOnDesktop_Bool, false);
@@ -1071,7 +1153,13 @@ public:
 			Settings::Instance().m_EnableOffsetPos = atoi(enabled.c_str()) != 0;
 
 			m_Listener->SendCommandResponse("OK\n");
-		}else {
+		}
+		else if (commandName == "SendFOV") {
+			Log(L"SendFOV command received!");
+			m_displayComponent->SetProjection();
+		}
+		else
+		{
 			Log(L"Invalid control command: %hs", commandName.c_str());
 			m_Listener->SendCommandResponse("NG\n");
 		}
@@ -1079,10 +1167,9 @@ public:
 	}
 
 	void OnPoseUpdated() {
+
 		if (m_unObjectId != vr::k_unTrackedDeviceIndexInvalid)
 		{
-			isFake = !m_Listener->IsConnected();
-
 			TrackingInfo info;
 			if (!m_Listener->HasValidTrackingInfo()) {
 
@@ -1115,8 +1202,7 @@ public:
 			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, GetPose(), sizeof(vr::DriverPose_t));
 
 			//Log(L"Generate VSync Event by OnPoseUpdated");
-			if (!isFake)
-				m_VSyncThread->InsertVsync();
+			m_VSyncThread->InsertVsync();
 
 			if (m_trackingReference) {
 				m_trackingReference->OnPoseUpdated();
@@ -1125,16 +1211,31 @@ public:
 	}
 
 	void OnNewClient(int refreshRate) {
+		
+		Log(L"CRemoteHMD OnNewClient( refreshRate : %u )", refreshRate);
+
+		uint32_t w = Settings::Instance().m_renderWidth / 2;
+		uint32_t h = Settings::Instance().m_renderHeight;
+
+		Log(L"CRemoteHMD OnNewClient() Reset Projection and Set Resolution %dx%d", w, h);
+
+		m_displayComponent->SetProjection();
+
+		m_displayComponent->SetRecommendedRenderTargetSize(w, h);
+
 		m_refreshRate = refreshRate;
-		Log(L"CRemoteHMD OnNewClient( refreshRate : %u )",refreshRate);
-		vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, vr::Prop_DisplayFrequency_Float, (float)m_refreshRate);
-		// Insert IDR frame for faster startup of decoding.
-		m_encoder->OnClientConnected();
+		
+		//vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, vr::Prop_DisplayFrequency_Float, (float)m_refreshRate);
+		//// Insert IDR frame for faster startup of decoding.
+		//m_encoder->OnClientConnected();
 	}
 
 	void OnPacketLoss() {
 		m_encoder->OnPacketLoss();
 	}
+
+	std::shared_ptr<Listener> m_Listener;
+	std::shared_ptr<DisplayComponent> m_displayComponent;
 private:
 	bool m_added;
 	vr::TrackedDeviceIndex_t m_unObjectId;
@@ -1145,11 +1246,11 @@ private:
 	std::shared_ptr<CD3DRender> m_D3DRender;
 	std::shared_ptr<CEncoder> m_encoder;
 	std::shared_ptr<AudioCapture> m_audioCapture;
-	std::shared_ptr<Listener> m_Listener;
+	
 	std::shared_ptr<VSyncThread> m_VSyncThread;
 	std::shared_ptr<RecenterManager> m_recenterManager;
 
-	std::shared_ptr<DisplayComponent> m_displayComponent;
+	
 	std::shared_ptr<DirectModeComponent> m_directModeComponent;
 
 	std::shared_ptr<TrackingReference> m_trackingReference;
@@ -1223,10 +1324,19 @@ void CServerDriver_DisplayRedirect::Cleanup()
 	VR_CLEANUP_SERVER_DRIVER_CONTEXT();
 }
 
+bool notConnected = true;
+
 void CServerDriver_DisplayRedirect::RunFrame()
 {
-	if (m_pRemoteHmd->isFake)
-		m_pRemoteHmd->OnPoseUpdated();
+	if (Settings::Instance().m_noVR)
+	{
+		if (m_pRemoteHmd != NULL && m_pRemoteHmd->m_Listener != NULL) {
+			notConnected = !m_Listener->IsConnected();
+
+			if (notConnected)
+				m_pRemoteHmd->OnPoseUpdated();
+		}
+	}
 }
 
 CServerDriver_DisplayRedirect g_serverDriverDisplayRedirect;

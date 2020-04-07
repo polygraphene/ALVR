@@ -102,6 +102,8 @@ void Settings::Load()
 
 	m_useTrackingReference = v.get(k_pch_Settings_UseTrackingReference_Bool).get<bool>();
 
+	m_noVR = v.get(k_pch_Settings_noVR_Bool).get<bool>();
+
 	m_EnableOffsetPos = v.get(k_pch_Settings_EnableOffsetPos_Bool).get<bool>();
 	m_OffsetPos[0] = (float)v.get(k_pch_Settings_OffsetPosX_Float).get<double>();
 	m_OffsetPos[1] = (float)v.get(k_pch_Settings_OffsetPosY_Float).get<double>();
@@ -123,6 +125,8 @@ void Settings::Load()
 	Log(L"debugOptions: Log:%d FrameIndex:%d FrameOutput:%d CaptureOutput:%d UseKeyedMutex:%d"
 		, m_DebugLog, m_DebugFrameIndex, m_DebugFrameOutput, m_DebugCaptureOutput, m_UseKeyedMutex);
 	Log(L"EncoderOptions: %hs", m_EncoderOptions.c_str());
+
+	Log(m_noVR? L"noVR = TRUE" : L"noVR = FALSE");
 
 	m_loaded = true;
 }
