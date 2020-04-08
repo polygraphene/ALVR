@@ -319,6 +319,7 @@ namespace ALVR
         {
             if (!socket.Connected)
             {
+                FakeHeadsetPanel.Visible = false;
                 UpdateConnectionState(false);
                 return;
             }
@@ -329,6 +330,7 @@ namespace ALVR
                 return;
             }
             logText.Text = str.Replace("\n", "\r\n");
+            
 
             var configs = ParsePacket(str);
             if (configs["Connected"] == "1")
@@ -422,6 +424,13 @@ namespace ALVR
                 }
             }
             noClientLabel.Visible = dataGridView1.Rows.Count == 0;
+
+            if (global::ALVR.Properties.Settings.Default.noVR)
+            {
+                findingPanel.Visible = false;
+                FakeHeadsetPanel.Visible = true;
+                return;
+            }
 
             var autoConnect = clientList.GetAutoConnectableClient();
             if (autoConnect != null)

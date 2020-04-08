@@ -266,11 +266,9 @@ public:
 		recommendedRenderWidthPtr = pnWidth;
 
 		recommendedRenderHeightPtr = pnHeight;
-		
-		GetDesktopResolution(*pnWidth, *pnHeight);
 
-		//*pnWidth = Settings::Instance().m_renderWidth / 2;
-		//*pnHeight = Settings::Instance().m_renderHeight;
+		*pnWidth = Settings::Instance().m_renderWidth / 2;
+		*pnHeight = Settings::Instance().m_renderHeight;
 		
 		Log(L"GetRecommendedRenderTargetSize %dx%d", *pnWidth, *pnHeight);
 	}

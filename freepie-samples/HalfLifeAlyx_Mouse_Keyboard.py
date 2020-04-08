@@ -159,7 +159,7 @@ if (deltaTime > 0.0):
 		touchY = -1
 	else:
 		touchY = 0
-		
+	
 	if (keyboard.getKeyDown(Key.LeftArrow)):
 		touchX = -1
 	elif (keyboard.getKeyDown(Key.RightArrow)):
@@ -186,18 +186,20 @@ if (deltaTime > 0.0):
 	
 	diagnostics.watch(keyboardX), diagnostics.watch(keyboardY)
 	
+	
+	
 	targetOrientation = [alvr.head_orientation[0], alvr.head_orientation[1], alvr.head_orientation[2]]
 	if (mouse.rightButton):
 		controllerOffsetX = lerp(controllerOffsetX, 0.2, 6 * deltaTime)
-		controllerOffsetY = lerp(controllerOffsetY, 0.4, 6 * deltaTime)
-		controllerOffsetZ = lerp(controllerOffsetZ, 0.4, 6 * deltaTime)
-		targetOrientation[2] += math.radians(160)
+		controllerOffsetY = lerp(controllerOffsetY, 0.0, 6 * deltaTime)
+		controllerOffsetZ = lerp(controllerOffsetZ, 0.2, 6 * deltaTime)
+		targetOrientation[2] = math.radians(180)
 		rightClick = True
 	else:
 		if (rightClick):
 			controllerOffsetX = 0
 			controllerOffsetY = 0
-			controllerOffsetZ = 0
+			controllerOffsetZ = 0.15
 			rightClick = False
 		else:
 			controllerOffsetX = clamp(controllerOffsetX, -0.4, 0.4)
@@ -209,7 +211,7 @@ if (deltaTime > 0.0):
 
 	forwardOrientation[0] = moveTowards(forwardOrientation[0], targetOrientation[0], 30 * deltaTime)
 	forwardOrientation[1] = moveTowards(forwardOrientation[1], targetOrientation[1], 30 * deltaTime)
-	forwardOrientation[2] = moveTowards(forwardOrientation[2], targetOrientation[2], 8 * deltaTime)
+	forwardOrientation[2] = moveTowards(forwardOrientation[2], targetOrientation[2], 6 * deltaTime)
 	
 	mouseX = mouse.deltaX * 0.001
 	mouseY = mouse.deltaY * 0.001
@@ -278,7 +280,17 @@ if (deltaTime > 0.0):
 	alvr.controller_position[0][1] = lerp(alvr.controller_position[0][1], desiredControllerPosition[1], 30 * deltaTime)
 	alvr.controller_position[0][2] = lerp(alvr.controller_position[0][2], desiredControllerPosition[2], 30 * deltaTime)
 	
-	desiredControllerPositionLeft = add(desiredControllerPosition, rotatevec( [forwardOrientation[0], forwardOrientation[1], forwardOrientation[2]], [-0.02, -0.15, 0,0] ) )
+	localLeftOffsetX = -0.04
+	localLeftOffsetY = -0.15
+	localLeftOffsetZ = 0.0
+	
+	if (keyboard.getKeyDown(Key.F)):
+		localLeftOffsetZ += -0.2 #move hand forward 
+	elif (keyboard.getKeyDown(Key.G)):
+		localLeftOffsetZ += 0.2 #move hand backward 
+	
+	desiredControllerPositionLeft = add(desiredControllerPosition, rotatevec( [forwardOrientation[0], forwardOrientation[1], forwardOrientation[2]], [localLeftOffsetX, localLeftOffsetY, localLeftOffsetZ,0] ) )
+	
 	
 	alvr.controller_position[1][0] = lerp(alvr.controller_position[1][0], desiredControllerPositionLeft[0], 30 * deltaTime)
 	alvr.controller_position[1][1] = lerp(alvr.controller_position[1][1], desiredControllerPositionLeft[1], 30 * deltaTime)
