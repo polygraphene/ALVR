@@ -1,5 +1,32 @@
 import math, time
 
+# HL:A Mouse and Keyboard v0.9
+#----------------------------------------------------------------------------
+# INFO
+#----------------------------------------------------------------------------
+# This is controller script optimized for keyboard and mouse controls in HL:Alyx game. Use FreePIE to execute this script.
+#
+# *** Note: this script is optimized for Dual Controllers mode and Continuous move setting
+#
+# * Mouse wheel extends your arm
+# * C button toggles left hand positions
+# * WSAD is left controller trackpad used to move you around with Continuous mode
+# * Right mouse button rotates arms to reach the backpack
+# * Left mouse button is 'trigger' to grab an ammo. E button is left hand trigger by default
+# * Middle mouse button is 'Menu' button used to pull the slider of your weapon
+# * R is 'Grip' button to drop the clip
+# * LeftCtrl is to crouch
+# * F and G to move left hand forward and backward to reach the pockets
+# * P for menu
+triggerKey = Key.E
+systemKey = Key.Q
+menuKey = Key.T
+gripKey = Key.R
+handToggleKey = Key.C
+handForwardKey = Key.F
+handBackwardKey = Key.G
+crouchKey = Key.LeftControl
+
 #----------------------------------------------------------------------------
 #	Math Utility
 #----------------------------------------------------------------------------
@@ -190,17 +217,6 @@ if (deltaTime > 0.0):
 	
 	diagnostics.watch(keyboardX), diagnostics.watch(keyboardY)
 	
-	if (keyboard.getPressed(Key.LeftArrow)):
-		grabX -= 0.1
-	if (keyboard.getPressed(Key.RightArrow)):
-		grabX += 0.1
-	if (keyboard.getPressed(Key.DownArrow)):
-		grabZ -= 0.1
-	if (keyboard.getPressed(Key.UpArrow)):
-		grabZ += 0.1
-	
-	diagnostics.watch(grabX),diagnostics.watch(grabY)
-	
 	targetOrientation = [alvr.head_orientation[0], alvr.head_orientation[1], alvr.head_orientation[2]]
 	if (mouse.rightButton):
 		#controllerOffsetX = 0
@@ -249,7 +265,7 @@ if (deltaTime > 0.0):
 	
 	alvr.override_head_position = True
 	
-	if (keyboard.getPressed(Key.LeftControl)):
+	if (keyboard.getPressed(crouchKey)):
 		isCrouch = not isCrouch
 	
 	headOffset = [0, 0, 0]
@@ -297,12 +313,12 @@ if (deltaTime > 0.0):
 	localLeftOffsetY = -0.15
 	localLeftOffsetZ = 0.0
 	
-	if (keyboard.getPressed(Key.C)):
+	if (keyboard.getPressed(handToggleKey)):
 		handToggle = not handToggle
 	
-	if (keyboard.getKeyDown(Key.F)):
+	if (keyboard.getKeyDown(handForwardKey)):
 		localLeftOffsetZ += -0.2 #move hand forward 
-	elif (keyboard.getKeyDown(Key.G)):
+	elif (keyboard.getKeyDown(handBackwardKey)):
 		localLeftOffsetZ += 0.2 #move hand backward 
 	
 	if (handToggle or mouse.rightButton):
@@ -318,17 +334,11 @@ if (deltaTime > 0.0):
 	alvr.controller_orientation[1][1] = alvr.controller_orientation[0][1]
 	alvr.controller_orientation[1][2] = alvr.controller_orientation[0][2] - math.radians(58)
 	
-	alvr.trigger[1] = keyboard.getKeyDown(Key.E)
-	
-if (buttonsUpdateTime >= 0.02):
+	alvr.trigger[1] = keyboard.getKeyDown(triggerKey)
 
-	deltaTime = buttonsUpdateTime
+	alvr.buttons[0][alvr.Id("system")] = keyboard.getKeyDown(systemKey)
 	
-	buttonsUpdateTime = 0.0
-
-	alvr.buttons[0][alvr.Id("system")] = keyboard.getKeyDown(Key.Q)
-	
-	alvr.buttons[0][alvr.Id("application_menu")] = keyboard.getKeyDown(Key.F) or mouse.middleButton
+	alvr.buttons[0][alvr.Id("application_menu")] = keyboard.getKeyDown(menuKey) or mouse.middleButton
 	
 	# Controller buttons
 	
@@ -338,16 +348,8 @@ if (buttonsUpdateTime >= 0.02):
 	
 	alvr.buttons[0][alvr.Id("trackpad_touch")] = True
 	
-	alvr.trackpad[0]
-	
-	# Hold touchpad down and pull the trigger to activate 'Grip' button
-	
 	triggerPulledNow = leftClick
 	
-	alvr.buttons[0][alvr.Id("grip")] = keyboard.getKeyDown(Key.R)
-	#if (rightClick):
-		#alvr.buttons[0][alvr.Id("grip")] = mouseBtnBack
-	#else:	
-		#alvr.buttons[0][alvr.Id("grip")] = keyboard.getKeyDown(Key.Space)
+	alvr.buttons[0][alvr.Id("grip")] = keyboard.getKeyDown(gripKey)
 		
 	alvr.trigger[0] = triggerPulledNow
