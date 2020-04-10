@@ -103,6 +103,7 @@ void Settings::Load()
 	m_useTrackingReference = v.get(k_pch_Settings_UseTrackingReference_Bool).get<bool>();
 
 	m_noVR = v.get(k_pch_Settings_noVR_Bool).get<bool>();
+	m_customFOV = (float)v.get(k_pch_Settings_customFOV_Float).get<double>();
 
 	m_EnableOffsetPos = v.get(k_pch_Settings_EnableOffsetPos_Bool).get<bool>();
 	m_OffsetPos[0] = (float)v.get(k_pch_Settings_OffsetPosX_Float).get<double>();

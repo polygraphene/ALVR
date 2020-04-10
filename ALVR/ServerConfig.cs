@@ -173,6 +173,8 @@ namespace ALVR
 
                 driverConfig.noVR = Properties.Settings.Default.noVR;
 
+                driverConfig.customFOV = float.Parse(Properties.Settings.Default.CustomFOV);
+
                 driverConfig.enableOffsetPos = Properties.Settings.Default.useOffsetPos;
                 driverConfig.offsetPosX = Utils.ParseFloat(Properties.Settings.Default.offsetPosX);
                 driverConfig.offsetPosY = Utils.ParseFloat(Properties.Settings.Default.offsetPosY);

@@ -429,7 +429,7 @@ namespace ALVR
             {
                 findingPanel.Visible = false;
                 FakeHeadsetPanel.Visible = true;
-                return;
+                //return;
             }
 
             var autoConnect = clientList.GetAutoConnectableClient();

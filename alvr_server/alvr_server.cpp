@@ -343,12 +343,17 @@ public:
 		bool noVR = Settings::Instance().m_noVR;
 		Log(noVR ? L"GetProjection noVR = TRUE" : L"GetProjection noVR = FALSE");
 		if (noVR) {
-			Log(L" m_noVR is TRUE! Set custom FOV");
+			float customFOV = Settings::Instance().m_customFOV;
+			Log(L" m_noVR is TRUE! Set custom FOV %d", customFOV);
+			if (customFOV < 30 || customFOV > 160)
+				customFOV = 120;
+			float fov_rad =  (customFOV * M_PI / 180.0);
+
 			//Set FOV
-			*pfLeft = -2.144f;
-			*pfRight = 2.144f;
-			*pfTop = -2.144f;
-			*pfBottom = 2.144f;
+			*pfLeft = -fov_rad;
+			*pfRight = fov_rad;
+			*pfTop = -fov_rad;
+			*pfBottom = fov_rad;
 		}
 		else {
 			*pfLeft = -1.0f;

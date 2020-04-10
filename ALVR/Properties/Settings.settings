@@ -86,5 +86,8 @@
     <Setting Name="useDefaultSoundDevice" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="CustomFOV" Type="System.String" Scope="User">
+      <Value Profile="(Default)">120</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

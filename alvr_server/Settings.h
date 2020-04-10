@@ -55,6 +55,7 @@ static const char * const k_pch_Settings_ControllerRecenterButton_Int32 = "contr
 
 static const char * const k_pch_Settings_UseTrackingReference_Bool = "useTrackingReference";
 static const char* const k_pch_Settings_noVR_Bool = "noVR";
+static const char* const k_pch_Settings_customFOV_Float = "customFOV";
 
 static const char * const k_pch_Settings_EnableOffsetPos_Bool = "enableOffsetPos";
 static const char * const k_pch_Settings_OffsetPosX_Float = "offsetPosX";
@@ -156,6 +157,7 @@ public:
 
 	bool m_useTrackingReference;
 	bool m_noVR;
+	float m_customFOV;
 
 	int32_t m_trackingFrameOffset;
 
