@@ -235,7 +235,7 @@ private:
 		}
 		float deltaTime = float(clock() - mlastUpdateTime) / CLOCKS_PER_SEC;
 
-		if (deltaTime >= 0.005f) 
+		if (deltaTime >= 0.001f) 
 		{
 			auto data = m_freePIE->GetData();
 			bool enableControllerButton = data.flags & FreePIE::ALVR_FREEPIE_FLAG_OVERRIDE_BUTTONS;
@@ -262,8 +262,8 @@ private:
 					, i, ret, m_remoteControllers[i]->GetSerialNumber().c_str());
 			}
 
-			float speedLerp = 10.0f * deltaTime;
-			float angularSpeedLerp = 15 * deltaTime;
+			float speedLerp = 15.0f * deltaTime;
+			float angularSpeedLerp = 15.0f * deltaTime;
 
 			mlastUpdateTime = clock();
 
@@ -284,7 +284,7 @@ private:
 
 				double euler[3] = { lastRotationEuler[0].x, lastRotationEuler[0].y, lastRotationEuler[0].z };
 
-				Quaternion controllerRotation = Quaternion(m_fixedOrientationController.x, m_fixedOrientationController.y, m_fixedOrientationController.z, m_fixedOrientationController.w);
+				Quaternion controllerRotation = Quaternion((float)m_fixedOrientationController.x, (float)m_fixedOrientationController.y, (float)m_fixedOrientationController.z, (float)m_fixedOrientationController.w);
 				Quaternion lastRotationInverse;
 				lastRotation.Inverse(lastRotationInverse);
 				Quaternion deltaRotation = lastRotationInverse * controllerRotation;
@@ -301,7 +301,7 @@ private:
 
 				QuaternionToEulerAngle(deltaRotationQ, deltaRotationEuler);
 
-				TrackingVector3 newAngularVelocity = TrackingVector3(deltaRotationEuler[0] / deltaTime, deltaRotationEuler[1] / deltaTime, deltaRotationEuler[2] / deltaTime);
+				TrackingVector3 newAngularVelocity = TrackingVector3((float)deltaRotationEuler[0] / deltaTime, (float)deltaRotationEuler[1] / deltaTime, (float)deltaRotationEuler[2] / deltaTime);
 
 				newAngularVelocity.x = clamp(newAngularVelocity.x, -1.0f, 1.0f);
 				newAngularVelocity.y = clamp(newAngularVelocity.y, -1.0f, 1.0f);
@@ -313,7 +313,7 @@ private:
 
 				m_LastControllerPosition[0] = m_fixedPositionController;
 
-				lastRotationEuler[0] = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
+				lastRotationEuler[0] = TrackingVector3((float)eulerAngles[0], (float)eulerAngles[1], (float)eulerAngles[2]);
 
 				if (recenterRequested) {
 					BeginRecenter();
@@ -331,7 +331,7 @@ private:
 				eulerAngles[1] = data.controller_orientation[1][1];
 				eulerAngles[2] = data.controller_orientation[1][2];
 
-				TrackingVector3 currentRotation = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
+				TrackingVector3 currentRotation = TrackingVector3((float)eulerAngles[0], (float)eulerAngles[1], (float)eulerAngles[2]);
 
 				TrackingVector3 newAngularVelocity = (currentRotation - lastRotationEuler[1]) / deltaTime;
 
@@ -352,7 +352,7 @@ private:
 
 				m_LastControllerPosition[1] = positionController1;
 
-				lastRotationEuler[1] = TrackingVector3(eulerAngles[0], eulerAngles[1], eulerAngles[2]);
+				lastRotationEuler[1] = TrackingVector3((float)eulerAngles[0], (float)eulerAngles[1], (float)eulerAngles[2]);
 			}
 		}
 	}

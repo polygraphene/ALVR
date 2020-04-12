@@ -347,7 +347,7 @@ public:
 			Log(L" m_noVR is TRUE! Set custom FOV %d", customFOV);
 			if (customFOV < 30 || customFOV > 160)
 				customFOV = 120;
-			float fov_rad =  (customFOV * M_PI / 180.0);
+			float fov_rad = (customFOV * M_PI / 180.0f);
 
 			//Set FOV
 			*pfLeft = -fov_rad;
@@ -879,7 +879,20 @@ public:
 			Log(L"TrackedDeviceAdded(TrackingReference) Ret=%d SerialNumber=%hs", ret, GetSerialNumber().c_str());
 		}
 		m_recenterManager = std::make_shared<RecenterManager>();
-		m_recenterManager->CreateRemoteController(false);
+
+		auto props = vr::VRProperties()->TrackedDeviceToPropertyContainer(1);
+		if (props != NULL) {
+			auto modelNumber = vr::VRProperties()->GetStringProperty(props, vr::Prop_ModelNumber_String);
+			auto renderModel = vr::VRProperties()->GetStringProperty(props, vr::Prop_RenderModelName_String);
+
+			Log(L"Controller already present %d = %s %s\n", 1, modelNumber.c_str(), renderModel.c_str());
+		}
+
+		//add right controller immediately if fake vr is enabled 
+		else if (Settings::Instance().m_noVR) {
+			m_recenterManager->CreateRemoteController(false);
+			m_recenterManager->CreateRemoteController(true);
+		}
 	}
 
 	virtual vr::EVRInitError Activate(vr::TrackedDeviceIndex_t unObjectId) override

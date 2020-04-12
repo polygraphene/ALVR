@@ -105,7 +105,7 @@ private:
 		m_p->version = ALVR_FREEPIE_SIGNATURE_V2;
 		m_p->flags = 0;
 
-		m_p->controllers = 1;
+		m_p->controllers = 0;
 
 		memcpy(&m_copy, m_p, sizeof(FreePIEFileMapping));
 
