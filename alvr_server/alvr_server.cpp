@@ -344,7 +344,7 @@ public:
 		Log(noVR ? L"GetProjection noVR = TRUE" : L"GetProjection noVR = FALSE");
 		if (noVR) {
 			float customFOV = Settings::Instance().m_customFOV;
-			Log(L" m_noVR is TRUE! Set custom FOV %d", customFOV);
+			Log(L" m_noVR is TRUE! Set custom FOV %f", customFOV);
 			if (customFOV < 30 || customFOV > 160)
 				customFOV = 120;
 			float fov_rad = (customFOV * M_PI / 180.0f);
@@ -945,25 +945,29 @@ public:
 		Log(L"Using %s as primary graphics adapter.", wchAdapterDescription);
 		Log(L"OSVer: %s", GetWindowsOSVersion().c_str());
 
+		
 		// Spin up a separate thread to handle the overlapped encoding/transmit step.
 		m_encoder = std::make_shared<CEncoder>();
-		try {
-			m_encoder->Initialize(m_D3DRender, m_Listener);
-		}
-		catch (Exception e) {
-			FatalLog(L"Failed to initialize CEncoder. %s", e.what());
-			return vr::VRInitError_Driver_Failed;
-		}
-		m_encoder->Start();
-
-		if (Settings::Instance().m_enableSound) {
-			m_audioCapture = std::make_shared<AudioCapture>(m_Listener);
+		if (!Settings::Instance().m_noVR) 
+		{
 			try {
-				m_audioCapture->Start(ToWstring(Settings::Instance().m_soundDevice));
+				m_encoder->Initialize(m_D3DRender, m_Listener);
 			}
 			catch (Exception e) {
-				FatalLog(L"Failed to start audio capture. %s", e.what());
+				FatalLog(L"Failed to initialize CEncoder. %s", e.what());
 				return vr::VRInitError_Driver_Failed;
+			}
+			m_encoder->Start();
+
+			if (Settings::Instance().m_enableSound) {
+				m_audioCapture = std::make_shared<AudioCapture>(m_Listener);
+				try {
+					m_audioCapture->Start(ToWstring(Settings::Instance().m_soundDevice));
+				}
+				catch (Exception e) {
+					FatalLog(L"Failed to start audio capture. %s", e.what());
+					return vr::VRInitError_Driver_Failed;
+				}
 			}
 		}
 

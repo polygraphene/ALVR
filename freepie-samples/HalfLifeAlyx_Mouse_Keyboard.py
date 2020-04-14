@@ -562,7 +562,7 @@ if (deltaTime > 0.0):
 	rot = alvr.controller_orientation[0]
 	rot[0] = lerp(rot[0], forwardOrientation[0], 0.2)
 	rot[1] = lerp(rot[1], forwardOrientation[1] + math.radians(0), 0.2)
-	rot[2] = lerp(rot[2], forwardOrientation[2] + math.radians(58), 0.2)
+	rot[2] = lerp(rot[2], forwardOrientation[2] + math.radians(60), 0.2)
 	
 	# Local vector from controller pivot
 	controllerOffsetVector = rotatevec( forwardOrientation, [controllerOffsetX, controllerOffsetY, controllerOffsetZ,0])
