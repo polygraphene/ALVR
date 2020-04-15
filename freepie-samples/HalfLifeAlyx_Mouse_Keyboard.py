@@ -406,13 +406,18 @@ def rotatevec(yaw_pitch_roll, vec):
 #	Main Program
 #----------------------------------------------------------------------------
 
-global timestamp, buttonsUpdateTime, forwardOrientation, controllerOffsetX, controllerOffsetY, controllerOffsetZ, leftClick, rightClick, isCrouch, touchX, touchY, lastTouchTime, handToggle, grabX, grabY, grabZ, headPositionOffset, mouseWheel, leftHandUp
+global timestamp, buttonsUpdateTime, forwardOrientation, controllerOffsetX, controllerOffsetY, controllerOffsetZ, leftClick, rightClick, isCrouch, touchX, touchY, lastTouchTime, handToggle, grabX, grabY, grabZ, headPositionOffset, mouseWheel, leftHandUp, rightHandToggle
 global touchId,clickId
 
 #ControllerPivotVector - placed at the right eye for better aiming
 defaultPivotX = 0.0230
 defaultPivotY = 0
 defaultPivotZ = -0.5
+
+leftHandShiftedPosition = [-0.3, -0.2, -0.4, 0.0]
+rightHandShiftedPosition = [0.3, -0.2, -0.4, 0.0]
+
+crouchHeight = -0.5
 
 if starting:
 	#system.threadExecutionInterval = 10
@@ -422,6 +427,7 @@ if starting:
 	isCrouch = False
 	handToggle = False
 	leftHandUp = False
+	rightHandToggle = False
 	touchX = 0
 	touchY = 0
 	controllerOffsetX = 0
@@ -538,7 +544,7 @@ if (deltaTime > 0.0):
 	
 	headOffset = [0, 0, 0]
 	if (isCrouch):
-		headOffset[1] = -0.5
+		headOffset[1] = crouchHeight
 	else:
 		headOffset[1] = 0.0
 	
@@ -566,8 +572,14 @@ if (deltaTime > 0.0):
 	
 	# Local vector from controller pivot
 	controllerOffsetVector = rotatevec( forwardOrientation, [controllerOffsetX, controllerOffsetY, controllerOffsetZ,0])
-		
-	controllerPivotVector  = rotatevec( forwardOrientation, [defaultPivotX, defaultPivotY, defaultPivotZ,0] )
+	
+	if (keyboard.getPressed(Key.LeftShift)):
+		rightHandToggle = not rightHandToggle
+	
+	if (rightHandToggle):
+		controllerPivotVector  = rotatevec( forwardOrientation, rightHandShiftedPosition )
+	else:
+		controllerPivotVector  = rotatevec( forwardOrientation, [defaultPivotX, defaultPivotY, defaultPivotZ,0] )
 	
 	controllerPivotVector[0] += alvr.head_position[0]
 	controllerPivotVector[1] += alvr.head_position[1]
@@ -603,7 +615,7 @@ if (deltaTime > 0.0):
 		if (handToggle or mouse.rightButton):
 			desiredControllerPositionLeft = add(desiredControllerPosition, rotatevec( forwardOrientation, [localLeftOffsetX, localLeftOffsetY, localLeftOffsetZ,0] ) )
 		else:
-			desiredControllerPositionLeft = rotatevec( forwardOrientation, [-0.3, -0.2, -0.4, 0.0] )
+			desiredControllerPositionLeft = rotatevec( forwardOrientation, leftHandShiftedPosition )
 			desiredControllerPositionLeft[0] += alvr.head_position[0]
 			desiredControllerPositionLeft[1] += alvr.head_position[1]
 			desiredControllerPositionLeft[2] += alvr.head_position[2]
