@@ -406,7 +406,7 @@ def rotatevec(yaw_pitch_roll, vec):
 #	Main Program
 #----------------------------------------------------------------------------
 
-global timestamp, buttonsUpdateTime, forwardOrientation, controllerOffsetX, controllerOffsetY, controllerOffsetZ, leftClick, rightClick, isCrouch, touchX, touchY, lastTouchTime, handToggle, grabX, grabY, grabZ, headPositionOffset, mouseWheel
+global timestamp, buttonsUpdateTime, forwardOrientation, controllerOffsetX, controllerOffsetY, controllerOffsetZ, leftClick, rightClick, isCrouch, touchX, touchY, lastTouchTime, handToggle, grabX, grabY, grabZ, headPositionOffset, mouseWheel, leftHandUp
 global touchId,clickId
 
 #ControllerPivotVector - placed at the right eye for better aiming
@@ -421,6 +421,7 @@ if starting:
 	rightClick = False
 	isCrouch = False
 	handToggle = False
+	leftHandUp = False
 	touchX = 0
 	touchY = 0
 	controllerOffsetX = 0
@@ -552,7 +553,7 @@ if (deltaTime > 0.0):
 	
 	localRight = rotatevec(alvr.controller_orientation[0], [1,0,0,0])
 	
-	headPositionOffset = add( add(headPositionOffset, mul(localForward, (keyboardY * deltaTime))), mul(localRight, (keyboardX * deltaTime)))
+	#headPositionOffset = add( add(headPositionOffset, mul(localForward, (keyboardY * deltaTime))), mul(localRight, (keyboardX * deltaTime)))
 	
 	alvr.head_position[0] = headPositionOffset[0]
 	alvr.head_position[1] = headPositionOffset[1] + lerp(alvr.head_position[1], headOffset[1], 10 * deltaTime)
@@ -561,7 +562,7 @@ if (deltaTime > 0.0):
 	rot = alvr.controller_orientation[0]
 	rot[0] = lerp(rot[0], forwardOrientation[0], 0.2)
 	rot[1] = lerp(rot[1], forwardOrientation[1] + math.radians(0), 0.2)
-	rot[2] = lerp(rot[2], forwardOrientation[2] + math.radians(58), 0.2)
+	rot[2] = lerp(rot[2], forwardOrientation[2] + math.radians(60), 0.2)
 	
 	# Local vector from controller pivot
 	controllerOffsetVector = rotatevec( forwardOrientation, [controllerOffsetX, controllerOffsetY, controllerOffsetZ,0])
@@ -574,7 +575,7 @@ if (deltaTime > 0.0):
 	
 	desiredControllerPosition = add(controllerPivotVector, controllerOffsetVector)
 	
-	desiredControllerPosition[1] += headOffset[1]
+	#desiredControllerPosition[1] += headOffset[1]
 	
 	alvr.controller_position[0][0] = lerp(alvr.controller_position[0][0], desiredControllerPosition[0], lerpX30)
 	alvr.controller_position[0][1] = lerp(alvr.controller_position[0][1], desiredControllerPosition[1], lerpX30)
@@ -592,15 +593,20 @@ if (deltaTime > 0.0):
 	if (keyboard.getKeyDown(handForwardKey)):
 		localLeftOffsetZ += -0.2 #move hand forward 
 	elif (keyboard.getKeyDown(handBackwardKey)):
-		localLeftOffsetZ += 0.2 #move hand backward 
+		localLeftOffsetZ += 0.2 #move hand backward
+	if (keyboard.getPressed(Key.V)):
+		leftHandUp = not leftHandUp
+	if (leftHandUp):
+		localLeftOffsetY = 0.1
 	
-	if (handToggle or mouse.rightButton):
-		desiredControllerPositionLeft = add(desiredControllerPosition, rotatevec( forwardOrientation, [localLeftOffsetX, localLeftOffsetY, localLeftOffsetZ,0] ) )
-	else:
-		desiredControllerPositionLeft = rotatevec( forwardOrientation, [-0.3, -0.2 + headOffset[1], -0.4, 0.0] )
-		desiredControllerPositionLeft[0] += alvr.head_position[0]
-		desiredControllerPositionLeft[1] += alvr.head_position[1]
-		desiredControllerPositionLeft[2] += alvr.head_position[2]
+	if (not keyboard.getKeyDown(Key.LeftAlt)):
+		if (handToggle or mouse.rightButton):
+			desiredControllerPositionLeft = add(desiredControllerPosition, rotatevec( forwardOrientation, [localLeftOffsetX, localLeftOffsetY, localLeftOffsetZ,0] ) )
+		else:
+			desiredControllerPositionLeft = rotatevec( forwardOrientation, [-0.3, -0.2, -0.4, 0.0] )
+			desiredControllerPositionLeft[0] += alvr.head_position[0]
+			desiredControllerPositionLeft[1] += alvr.head_position[1]
+			desiredControllerPositionLeft[2] += alvr.head_position[2]
 	
 	alvr.controller_position[1][0] = lerp(alvr.controller_position[1][0], desiredControllerPositionLeft[0], lerpX30)
 	alvr.controller_position[1][1] = lerp(alvr.controller_position[1][1], desiredControllerPositionLeft[1], lerpX30)
@@ -608,7 +614,7 @@ if (deltaTime > 0.0):
 	
 	alvr.controller_orientation[1][0] = alvr.controller_orientation[0][0] 
 	alvr.controller_orientation[1][1] = alvr.controller_orientation[0][1]
-	alvr.controller_orientation[1][2] = alvr.controller_orientation[0][2] - math.radians(58)
+	alvr.controller_orientation[1][2] = alvr.controller_orientation[0][2] - math.radians(60)
 	
 	alvr.trigger[1] = keyboard.getKeyDown(triggerKey)
 
