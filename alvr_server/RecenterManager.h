@@ -262,7 +262,7 @@ private:
 					, i, ret, m_remoteControllers[i]->GetSerialNumber().c_str());
 			}
 
-			float speedLerp = 15.0f * deltaTime;
+			float speedLerp = 30.0f * deltaTime;
 			float angularSpeedLerp = 15.0f * deltaTime;
 
 			mlastUpdateTime = clock();
