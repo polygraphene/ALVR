@@ -456,6 +456,12 @@ public:
 		Log(L"MixFormat: nBlockAlign=%d wFormatTag=%d wBitsPerSample=%d nChannels=%d nSamplesPerSec=%d"
 			, pwfx->nBlockAlign, pwfx->wFormatTag, pwfx->wBitsPerSample, pwfx->nChannels, pwfx->nSamplesPerSec);
 
+		if (pwfx->nChannels > 2) {
+			Log(L"WARNING: MixFormat nChannels=%d > 2 ! Force change to stereo", pwfx->nChannels);
+			pwfx->nChannels = 2;
+			pwfx->nBlockAlign = 8;
+		}
+
 		// coerce int-16 wave format
 		// can do this in-place since we're not changing the size of the format
 		// also, the engine will auto-convert from float to int for us
