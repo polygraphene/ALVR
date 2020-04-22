@@ -1,6 +1,6 @@
 import math, time
 
-# HL:A Mouse and Keyboard v0.9
+# HL:A Mouse and Keyboard v1.0
 #----------------------------------------------------------------------------
 # INFO
 #----------------------------------------------------------------------------
@@ -18,271 +18,64 @@ import math, time
 # * LeftCtrl is to crouch
 # * F and G to move left hand forward and backward to reach the pockets
 # * P for menu
+
+# ACTIONS MAPPING
+
 triggerKey = Key.E
+
 systemKey = Key.Q
+
 menuKey = Key.T
+
 gripKey = Key.R
-handToggleKey = Key.C
+
+rightHandToggleKey = Key.RightShift
+
+handUpKey = Key.V
+
+leftHandToggleKey = Key.LeftShift
+
+rightHandFreezeKey = Key.RightAlt
+
+leftHandFreezeKey = Key.LeftAlt
+
 handForwardKey = Key.F
+
 handBackwardKey = Key.G
+
 crouchKey = Key.LeftControl
-#----------------------------------------------------------------------------
-# Vector3D Math inspired by https://github.com/gunny26/python-3d-math
-#----------------------------------------------------------------------------
-class Vector3D(object):
-	"""Vector in R³ """
 
-	def __init__(self, x, y, z):
-		"""
-		3D coordinates given with x, y, z
-		"""
-		self.__data = [x, y, z]
-	
-	def x(self):
-		return self.__data[0]
-		
-	def x_(self, v):
-		self.__data[0] = v
-		
-	x = property(x, x_)
+# SETTINGS
 
+# When hand is not active it is shifted to the special position
+LeftHandShiftedPivot  = [-0.15, -0.15, -0.4, 0.0]
+RightHandShiftedPivot = [ 0.25, -0.05, -0.6, 0.0]
 
-	def y(self):
-		return self.__data[0]
-		
-	def y_(self, v):
-		self.__data[0] = v
-		
-	y = property(y, y_)
+# When Left hand is active
+leftHandOffset = [ 0.0, -0.15, -0.6, 0.0]
 
+leftHandSnappedOffset = [ -0.05, -0.05, 0.1, 0.0]
 
-	def z(self):
-		return self.__data[0]
-		
-	def z_(self, v):
-		self.__data[0] = v
-		
-	z = property(z, z_)
-	
-	@classmethod
-	def from_list(cls, data):
-		"""create class from 3 item tuple"""
-		return cls(data[0], data[1], data[2])
+# Default hand positions from their pivot points
+LeftHandLocalPosition  = [0.0, 0.0, 0.0, 0.0]
+RightHandLocalPosition = [0.0, 0.0, 0.2, 0.0]
 
-	def __eq__(self, other):
-		"""test equality"""
-		return all((self[index] == other.__data[index] for index in range(3)))
+# Right hand pivot should be located behind the right eye position. IPD on GearVR is 0.064m so right eye is at 0.032m to the right
+HandPivotOffset = [0.032, 0, -0.5, 0.0]
 
-	def nearly_equal(self, other):
-		"""
-		test nearly equality
-		special for unittesting, to test if two floating point number are nearly
-		equal, up to some degree of error
-		"""
-		return all((abs(self[index] - other.__data[index]) < 0.0001 for index in range(3)))
-		
-	def __richcmp__(self, other, method):
-		if method == 0: # < __lt__
-			pass
-		elif method == 2: # == __eq__
-			return self.__data[0] == other.__data[0] and self.__data[1] == other.__data[1] and self.__data[2] == other.__data[2]
-		elif method == 4: # > __gt__
-			pass
-		elif method == 1: # <= lower_equal
-			pass
-		elif method == 3: # != __ne__
-			return self.__data[0] != other.__data[0] or self.__data[1] != other.__data[1] or self.__data[2] != other.__data[2]
-		elif method == 5: # >= greater equal
-			pass
+ArmMaxLength = 0.9
 
-	def __len__(self):
-		"""list interface"""
-		return 3
+# When hand is in backpack position, hand offset is applied to reach correct spot
+BackpackHandOffset = [0.2, 0.0, 0.2, 0.0]
 
-	def __repr__(self):
-		"""object representation"""
-		return "Vector3D(%(x)f, %(y)f, %(z)f)" % self.__dict__
+MouseSensivity = 0.001
 
-	def __str__(self):
-		"""string output"""
-		return "[%(x)f, %(y)f, %(z)f]" % self.__dict__
+WheelSensivity = 0.05
 
-	def __add__(self, other):
-		"""
-		vector addition with another Vector class
-		does not add up homogeneous part
-		"""
-		return Vector3D(self.__data[0] + other.__data[0], self.__data[1] + other.__data[1], self.__data[2] + other.__data[2])
+StandingHeight = 1.7
 
-	def __iadd__(self, other):
-		"""
-		vector addition with another Vector class implace
-		does not add up homogeneous part
-		"""
-		self.__data[0] += other.__data[0]
-		self.__data[1] += other.__data[1]
-		self.__data[2] += other.__data[2]
-		return self
+CrouchHeight = 1.0
 
-	def __sub__(self, other):
-		"""
-		vector addition with another Vector class
-		ignores homogeneous part
-		"""
-		return Vector3D(self.__data[0] - other.__data[0], self.__data[1] - other.__data[1], self.__data[2] - other.__data[2])
-
-	def __isub__(self, other):
-		"""
-		vector addition with another Vector class implace
-		ignores homogeneous part
-		"""
-		self.__data[0] -= other.__data[0]
-		self.__data[1] -= other.__data[1]
-		self.__data[2] -= other.__data[2]
-		return self
-
-	def __mul__(self, scalar):
-		"""
-		multiplication with scalar
-		ignores homogeneous part
-		"""
-		return Vector3D(self.__data[0] * scalar, self.__data[1] * scalar, self.__data[2] * scalar)
-
-	def __imul__(self, scalar):
-		"""
-		multiplication with scalar inplace
-		ignores homogeneous part
-		"""
-		self.__data[0] *= scalar
-		self.__data[1] *= scalar
-		self.__data[2] *= scalar
-		return self
-
-	def __div__(self, scalar):
-		"""
-		division with scalar
-		ignores homogeneous part
-		"""
-		return Vector3D(self.__data[0] / scalar, self.__data[1] / scalar, self.__data[2] / scalar)
-
-	def __idiv__(self, scalar):
-		"""
-		vector addition with another Vector class
-		ignores homogeneous part
-		"""
-		self.__data[0] /= scalar
-		self.__data[1] /= scalar
-		self.__data[2] /= scalar
-		return self
-
-	def length(self):
-		"""return length of vector"""
-		return math.sqrt(self.__data[0] * self.__data[0] + self.__data[1] * self.__data[1] + self.__data[2] * self.__data[2])
-
-	def length_sqrd(self):
-		"""retrun length squared"""
-		return self.__data[0] **2 + self.__data[1] ** 2 + self.__data[2] ** 2
-
-	def dot(self, other):
-		"""
-		homogeneous version, adds also h to dot product
-		this version is used in matrix multiplication
-		dot product of self and other vector
-		dot product is the projection of one vector to another,
-		for perpendicular vectors the dot prduct is zero
-		for parallell vectors the dot product is the length of the other vector
-		"""
-		dotproduct = self.__data[0] * other.__data[0] + self.__data[1] * other.__data[1] + self.__data[2] * other.__data[2]
-		return dotproduct
-
-	def dot3(self, other):
-		"""
-		this is the non-homogeneous dot product of self and other,
-		h is set to zero
-		dot product of self and other vector
-		dot product is the projection of one vector to another,
-		for perpedicular vectors the dot prduct is zero
-		for parallell vectors the dot product is the length of the other vector
-		the dot product of two vectors represents also the sin of the angle
-		between these two vectors.
-		the dot product represents the projection of other onto self
-		dot product = cos(theta)
-		so theta could be calculates as
-		theta = acos(dot product)
-		"""
-		dotproduct = self.__data[0] * other.__data[0] + self.__data[1] * other.__data[1] + self.__data[2] * other.__data[2]
-		return dotproduct
-
-	def cross(self, other):
-		"""
-		cross product of self and other vector
-		the result is a new perpendicular vector to self and other
-		the length of the new vector is defined as
-		|cross product| = |self| * |other| * cos(theta)
-		so the angle theta between self and other is calculated as follows
-		theta = asin(|cross product| / (|self| * | other|))
-		if self and other are unit vectors
-		|self| = |other| = 1
-		this simplifies to
-		|cross product| = sin(theta)
-		so you can use the cross product of two vectors two
-		find the angle between these two vector, possible useful for shading/lightning
-		"""
-		return Vector3D(
-			self.__data[1] * other.__data[2] - self.__data[2] * other.__data[1],
-			self.__data[2] * other.__data[0] - self.__data[0] * other.__data[2],
-			self.__data[0] * other.__data[1] - self.__data[1] * other.__data[0])
-
-	def normalized(self):
-		"""
-		return self with length=1, unit vector
-		divide every value (x,y,z) by length of vector
-		TODO: what about homgeneous part?
-		"""
-		return self / self.length()
-	unit = normalized
-
-	def project2d(self, shift_vec):
-		"""
-		project self to 2d
-		simply divide x and y with z value
-		and transform with valeus from shift_vec
-		"""
-		return (self.__data[0] / self.__data[2] + shift_vec[0], self.__data[1] / self.__data[2] + shift_vec[1])
-
-	def project(win_width, win_height, fov, viewer_distance):
-		"""
-		project some vector (vec1) to 2D Screen
-		vec1 - vector to project
-		win_width - width of window
-		win_height - height of screen
-		fov - field of view
-		viewer-distance - distance ov viewer in front of screen
-		returns <tuple> (x, y)
-		"""
-		factor = fov / (viewer_distance + self.__data[2])
-		x = self.__data[0] * factor + win_width / 2
-		y = -self.__data[1] * factor + win_height / 2
-		return x, y
-
-	def angle_to(self, other):
-		"""
-		angle between self and other Vector object
-		to calculate this, the dot product of self and other is used
-		"""
-		v1 = self.normalized()
-		v2 = other.normalized()
-		dotproduct = v1.dot(v2)
-		return math.acos(dotproduct)
-
-	def angle_to_unit(self, other):
-		"""this version assumes that these two vectors are unit vectors"""
-		return math.acos(self.dot(other))
-		
-	def rotateByEulerAngles(self, x, y, z):
-		q = euler2quaternion([x, y, z])
-		result = multiply(multiply(q, [self.__data[0], self.__data[1], self.__data[2], 1]), conj(q))
-		return Vector3D(result[0], result[1], result[2])
 #----------------------------------------------------------------------------
 #	Math Utility
 #----------------------------------------------------------------------------
@@ -367,12 +160,12 @@ def quaternion2euler(q):
   # roll (x-axis rotation)
   sinr = +2.0 * (q[3] * q[0] + q[1] * q[2])
   cosr = +1.0 - 2.0 * (q[0] * q[0] + q[1] * q[1])
-  yaw_pitch_roll[2] = atan2(sinr, cosr)
+  yaw_pitch_roll[2] = math.atan2(sinr, cosr)
 
   # pitch (y-axis rotation)
   sinp = +2.0 * (q[3] * q[1] - q[2] * q[0])
-  if (fabs(sinp) >= 1):
-	yaw_pitch_roll[1] = math.copysign(M_PI / 2, sinp)
+  if (math.fabs(sinp) >= 1):
+	yaw_pitch_roll[1] = math.copysign(math.pi / 2, sinp)
   else:
 	yaw_pitch_roll[1] = math.asin(sinp)
 
@@ -402,45 +195,95 @@ def rotatevec(yaw_pitch_roll, vec):
   q = euler2quaternion(yaw_pitch_roll)
   return multiply(multiply(q, vec), conj(q))
 
+def cross(one, other):
+	"""
+	cross product of self and other vector
+	the result is a new perpendicular vector to self and other
+	the length of the new vector is defined as
+	|cross product| = |self| * |other| * cos(theta)
+	so the angle theta between self and other is calculated as follows
+	theta = asin(|cross product| / (|self| * | other|))
+	if self and other are unit vectors
+	|self| = |other| = 1
+	this simplifies to
+	|cross product| = sin(theta)
+	so you can use the cross product of two vectors two
+	find the angle between these two vector, possible useful for shading/lightning
+	"""
+	return [one[1] * other[2] - one[2] * other[1], one[2] * other[0] - one[0] * other[2], one[0] * other[1] - one[1] * other[0] ]
+
+def QuaternionLookRotation(forward, up):
+	vector	= normalize(forward)
+	vector2 = normalize(cross(up, vector))
+	vector3 = normalize(cross(vector, vector2))
+	m00 = vector2[0]
+	m01 = vector2[1]
+	m02 = vector2[2]
+	m10 = vector3[0]
+	m11 = vector3[1]
+	m12 = vector3[2]
+	m20 = vector[0]
+	m21 = vector[1]
+	m22 = vector[2]
+	
+	quaternion = [0,0,0,1]
+	num8 = (m00 + m11) + m22
+	if (num8 > 0.0):
+		 num = math.sqrt(num8 + 1.0)
+		 quaternion[3] = num * 0.5;
+		 num = 0.5 / num;
+		 quaternion[0] = (m12 - m21) * num;
+		 quaternion[1] = (m20 - m02) * num;
+		 quaternion[2] = (m01 - m10) * num;
+		 return quaternion
+	if ((m00 >= m11) and (m00 >= m22)):
+		num7 = math.sqrt(((1.0 + m00) - m11) - m22)
+		num4 = 0.5 / num7
+		quaternion[0] = 0.5 * num7
+		quaternion[1] = (m01 + m10) * num4
+		quaternion[2] = (m02 + m20) * num4
+		quaternion[3] = (m12 - m21) * num4
+		return quaternion;
+	if (m11 > m22):
+		num6 = math.sqrt(((1.0 + m11) - m00) - m22)
+		num3 = 0.5 / num6
+		quaternion[0] = (m10+ m01) * num3
+		quaternion[1] = 0.5 * num6
+		quaternion[2] = (m21 + m12) * num3
+		quaternion[3] = (m20 - m02) * num3
+		return quaternion 
+	num5 = math.sqrt(((1.0 + m22) - m00) - m11)
+	num2 = 0.5 / num5
+	quaternion[0] = (m20 + m02) * num2
+	quaternion[1] = (m21 + m12) * num2
+	quaternion[2] = 0.5 * num5
+	quaternion[3] = (m01 - m10) * num2
+	return quaternion
 #----------------------------------------------------------------------------
 #	Main Program
 #----------------------------------------------------------------------------
 
-global timestamp, buttonsUpdateTime, forwardOrientation, controllerOffsetX, controllerOffsetY, controllerOffsetZ, leftClick, rightClick, isCrouch, touchX, touchY, lastTouchTime, handToggle, grabX, grabY, grabZ, headPositionOffset, mouseWheel, leftHandUp, rightHandToggle
-global touchId,clickId
-
-#ControllerPivotVector - placed at the right eye for better aiming
-defaultPivotX = 0.0230
-defaultPivotY = 0
-defaultPivotZ = -0.5
-
-leftHandShiftedPosition = [-0.3, -0.2, -0.4, 0.0]
-rightHandShiftedPosition = [0.3, -0.2, -0.4, 0.0]
-
-crouchHeight = -0.5
-
 if starting:
-	#system.threadExecutionInterval = 10
+	# Guns iron sights in HL:A are not placed at the same position as the hand so we need to adjust hand position to match foresights line with the center of the eye
+	gunOffset = [-0.012,-0.015,0,0]
+	# Gun is not perfectly aligned with the hand orientation so we need to adjust hand rotation to aim along the iron sight line
+	rightHandRotation = [56.2, 0.8, 0.0, 0.0]
+	leftHandRotation =  [0.0, 0.0, 0.0, 0.0]
 	timestamp = time.time()
 	leftClick = False
 	rightClick = False
 	isCrouch = False
-	handToggle = False
+	leftHandActive = True
 	leftHandUp = False
-	rightHandToggle = False
-	touchX = 0
-	touchY = 0
+	rightHandActive = True
+	keyboardRIGHT = 0
+	keyboardUP = 0
 	controllerOffsetX = 0
 	controllerOffsetY = 0
 	controllerOffsetZ = 0
-	#controllerPivotVector = [defaultPivotX,defaultPivotY,defaultPivotZ]
-	buttonsUpdateTime = 0
-	forwardOrientation = [0,0,0]
-	lastTouchTime = 0
-	grabX = 0.2
-	grabY = 0.0
-	grabZ = 0.2
-	headPositionOffset = [0,0,0]
+	mouseWheel = 0
+	forwardOrientation = [0,0,0,0]
+	headPositionOffset = [0,0,0,0]
 	alvr.two_controllers = True
 	alvr.override_head_position = True
 	alvr.override_head_orientation = True
@@ -451,182 +294,164 @@ if starting:
 	systemId = alvr.Id("system")
 	menuId = alvr.Id("application_menu")
 	gripId = alvr.Id("grip")
-	mouseWheel = 0
-
 
 deltaTime = time.time() - timestamp
-
-buttonsUpdateTime += deltaTime
 
 if (deltaTime > 0.0):
 	timestamp = time.time()
 	diagnostics.watch(deltaTime)
 	
-	keyboardX = (keyboard.getKeyDown(Key.D) * 1.0 - keyboard.getKeyDown(Key.A) * 1.0)
-	keyboardY = (keyboard.getKeyDown(Key.W) * 1.0 - keyboard.getKeyDown(Key.S) * 1.0)
 	mouseBtnBack = mouse.getButton(3)
 	mouseBtnFwd = mouse.getButton(4)
-	keyUp = keyboard.getKeyDown(Key.UpArrow)
-	keyDown = keyboard.getKeyDown(Key.DownArrow)
-	keyLeft = keyboard.getKeyDown(Key.LeftArrow)
-	keyRight = keyboard.getKeyDown(Key.RightArrow)
 	
-	mouseWheel = lerp(mouseWheel, mouse.wheel, 60.0 * deltaTime)
+	keyboardAD = (keyboard.getKeyDown(Key.D) * 1.0 - keyboard.getKeyDown(Key.A) * 1.0)
+	keyboardWS = (keyboard.getKeyDown(Key.W) * 1.0 - keyboard.getKeyDown(Key.S) * 1.0)
 	
-	if (mouseBtnFwd or keyUp):
-		touchY = 1.0
-	elif (mouseBtnBack or keyDown):
-		touchY = -1.0
-	else:
-		touchY = 0.0
-	if (keyLeft):
-		touchX = -1.0
-	elif (keyRight):
-		touchX = 1.0
-	else:
-		touchX = 0.0
-
-	alvr.trackpad[0][0] = touchX
-	alvr.trackpad[0][1] = touchY
-	alvr.trackpad[1][0] = keyboardX
-	alvr.trackpad[1][1] = keyboardY
+	keyboardUP = (keyboard.getKeyDown(Key.UpArrow) * 1.0 - keyboard.getKeyDown(Key.DownArrow) * 1.0)
+	keyboardRIGHT = (keyboard.getKeyDown(Key.RightArrow) * 1.0 - keyboard.getKeyDown(Key.LeftArrow) * 1.0)
 	
-	leftTrackPadClick = keyboardX != 0 or keyboardY != 0
+	rightHandRotation[0] += (keyboard.getPressed(Key.PageUp) * 0.1 - keyboard.getPressed(Key.PageDown) * 1.0)
+	rightHandRotation[1] += (keyboard.getPressed(Key.NumberPadPlus) * 0.1 - keyboard.getPressed(Key.NumberPadMinus) * 1.0)
+	
+	gunOffset[0] += (keyboard.getPressed(Key.NumberPad6) * 0.001 - keyboard.getPressed(Key.NumberPad4) * 0.001)
+	gunOffset[1] += (keyboard.getPressed(Key.NumberPad8) * 0.001 - keyboard.getPressed(Key.NumberPad2) * 0.001)
+	
+	diagnostics.watch(gunOffset[0]),diagnostics.watch(gunOffset[1])
+	diagnostics.watch(HandPivotOffset[0]), diagnostics.watch(HandPivotOffset[1])
+	diagnostics.watch(rightHandRotation[0]), diagnostics.watch(rightHandRotation[1])
+	
+	mouseWheel = lerp(mouseWheel, mouse.wheel, 30.0 * deltaTime)
+	
+	leftClick = mouse.leftButton
+	
+	if (keyboard.getPressed(rightHandToggleKey)):
+		rightHandActive = not rightHandActive
 		
+	if (keyboard.getPressed(leftHandToggleKey)):
+		leftHandActive = not leftHandActive
+	
+	# Right trackpad positions
+	alvr.trackpad[0][0] = keyboardRIGHT
+	alvr.trackpad[0][1] = keyboardUP + mouseBtnFwd * 1.0 - mouseBtnBack * 1.0 
+	
+	# Left trackpad positions
+	alvr.trackpad[1][0] = keyboardAD
+	alvr.trackpad[1][1] = keyboardWS
+	
+	leftTrackPadClick = alvr.trackpad[1][0] != 0 or alvr.trackpad[1][1] != 0
+	
 	alvr.buttons[1][touchId] = leftTrackPadClick
 	alvr.buttons[1][clickId] = leftTrackPadClick
 	
 	lerpX5 = 5 * deltaTime
+	lerpX10 = 10 * deltaTime
 	lerpX30 = 30 * deltaTime
 	
-	targetOrientation = [alvr.head_orientation[0], alvr.head_orientation[1], alvr.head_orientation[2]]
-	leftClick = mouse.leftButton
+	desiredArmOrientation = [alvr.head_orientation[0], alvr.head_orientation[1], alvr.head_orientation[2]]
+	
 	if (mouse.rightButton):
-		controllerOffsetX = lerp(controllerOffsetX, grabX, lerpX5)
-		controllerOffsetY = lerp(controllerOffsetY, grabY, lerpX5)
-		controllerOffsetZ = lerp(controllerOffsetZ, grabZ, lerpX5)
-		targetOrientation[2] = math.radians(180)
+		controllerOffsetX = lerp(controllerOffsetX, BackpackHandOffset[0], lerpX5)
+		controllerOffsetY = lerp(controllerOffsetY, BackpackHandOffset[1], lerpX5)
+		controllerOffsetZ = lerp(controllerOffsetZ, BackpackHandOffset[2], lerpX5)
+		desiredArmOrientation[2] = math.radians(180)
 		rightClick = True
 	else:
 		if (rightClick):
-			controllerOffsetX = 0
-			controllerOffsetY = 0
-			controllerOffsetZ = 0.15
+			controllerOffsetX = RightHandLocalPosition[0]
+			controllerOffsetY = RightHandLocalPosition[1]
+			controllerOffsetZ = RightHandLocalPosition[2]
 			rightClick = False
-		else:
-			controllerOffsetX = clamp(controllerOffsetX, -0.4, 0.4)
-			controllerOffsetY = clamp(controllerOffsetY, -0.4, 0.4)
-			controllerOffsetZ = clamp(controllerOffsetZ, -0.9, 0.4)
 	
-	forwardOrientation[0] = moveTowards(forwardOrientation[0], targetOrientation[0], lerpX5)
-	forwardOrientation[1] = moveTowards(forwardOrientation[1], targetOrientation[1], lerpX5)
-	forwardOrientation[2] = moveTowards(forwardOrientation[2], targetOrientation[2], lerpX5)
+	forwardOrientation[0] = moveTowards(forwardOrientation[0], desiredArmOrientation[0], lerpX5)
+	forwardOrientation[1] = moveTowards(forwardOrientation[1], desiredArmOrientation[1], lerpX5)
+	forwardOrientation[2] = moveTowards(forwardOrientation[2], desiredArmOrientation[2], lerpX5)
 	
-	mouseX = mouse.deltaX * 0.001
-	mouseY = mouse.deltaY * 0.001
+	mouseX = mouse.deltaX * MouseSensivity
+	mouseY = mouse.deltaY * MouseSensivity
 	
 	if (mouseWheel != 0):
-		controllerOffsetZ -= (mouseWheel) * 0.1 * deltaTime
+		controllerOffsetZ -= (mouseWheel) * WheelSensivity * deltaTime
 
-	if (leftClick or rightClick or mouseWheel):
-		lastTouchTime = time.time()
-
-	# Reset hand position
-	if ( not leftClick and not rightClick and not mouseWheel and (time.time() - lastTouchTime) > 0.4 ):
-		controllerOffsetX = lerp(controllerOffsetX, 0, 2 * deltaTime)
-		controllerOffsetY = lerp(controllerOffsetY, 0, 2 * deltaTime)
-		#controllerOffsetZ = lerp(controllerOffsetZ, 0, 2 * deltaTime)
+	controllerOffsetX = clamp(controllerOffsetX, -ArmMaxLength*0.5, ArmMaxLength*0.5)
+	controllerOffsetY = clamp(controllerOffsetY, -ArmMaxLength*0.5, ArmMaxLength*0.5)
+	controllerOffsetZ = clamp(controllerOffsetZ, -ArmMaxLength, ArmMaxLength*0.5)
 	
 	# Head offset and crouching
 	
 	if (keyboard.getPressed(crouchKey)):
 		isCrouch = not isCrouch
 	
-	headOffset = [0, 0, 0]
 	if (isCrouch):
-		headOffset[1] = crouchHeight
+		headPositionOffset[1] = CrouchHeight
 	else:
-		headOffset[1] = 0.0
+		headPositionOffset[1] = StandingHeight
 	
-	alvr.head_orientation[1] += -mouseX
-	alvr.head_orientation[2] += -mouseY
+	alvr.head_orientation[1] -= mouseX
+	alvr.head_orientation[2] -= mouseY
 	
-	localForward = rotatevec( alvr.controller_orientation[0], [0,0,-1,0] )
+	alvr.head_position[0] = lerp(alvr.head_position[0], headPositionOffset[0], lerpX10)
+	alvr.head_position[1] = lerp(alvr.head_position[1], headPositionOffset[1], lerpX10)
+	alvr.head_position[2] = lerp(alvr.head_position[2], headPositionOffset[2], lerpX10)
 	
-	localForward[1] = 0
-	
-	localForward = normalize(localForward)
-	
-	localRight = rotatevec(alvr.controller_orientation[0], [1,0,0,0])
-	
-	#headPositionOffset = add( add(headPositionOffset, mul(localForward, (keyboardY * deltaTime))), mul(localRight, (keyboardX * deltaTime)))
-	
-	alvr.head_position[0] = headPositionOffset[0]
-	alvr.head_position[1] = headPositionOffset[1] + lerp(alvr.head_position[1], headOffset[1], 10 * deltaTime)
-	alvr.head_position[2] = headPositionOffset[2]
-	
-	rot = alvr.controller_orientation[0]
-	rot[0] = lerp(rot[0], forwardOrientation[0], 0.2)
-	rot[1] = lerp(rot[1], forwardOrientation[1] + math.radians(0), 0.2)
-	rot[2] = lerp(rot[2], forwardOrientation[2] + math.radians(60), 0.2)
-	
+	rightHandLocalPosition = add(gunOffset, [controllerOffsetX, controllerOffsetY, controllerOffsetZ, 0] )
 	# Local vector from controller pivot
-	controllerOffsetVector = rotatevec( forwardOrientation, [controllerOffsetX, controllerOffsetY, controllerOffsetZ,0])
+	controllerOffsetVector = rotatevec( forwardOrientation, rightHandLocalPosition )
 	
-	if (keyboard.getPressed(Key.LeftShift)):
-		rightHandToggle = not rightHandToggle
+	controllerPivotVector = [alvr.head_position[0], alvr.head_position[1], alvr.head_position[2] ]
 	
-	if (rightHandToggle):
-		controllerPivotVector  = rotatevec( forwardOrientation, rightHandShiftedPosition )
+	if (not rightHandActive and not mouse.rightButton):
+		controllerPivotVector  = add(controllerPivotVector, rotatevec( forwardOrientation, RightHandShiftedPivot ))
 	else:
-		controllerPivotVector  = rotatevec( forwardOrientation, [defaultPivotX, defaultPivotY, defaultPivotZ,0] )
+		controllerPivotVector  = add(controllerPivotVector, rotatevec( forwardOrientation, HandPivotOffset ))
 	
-	controllerPivotVector[0] += alvr.head_position[0]
-	controllerPivotVector[1] += alvr.head_position[1]
-	controllerPivotVector[2] += alvr.head_position[2]
+	desiredRightHandPosition = add(controllerPivotVector, controllerOffsetVector)
 	
-	desiredControllerPosition = add(controllerPivotVector, controllerOffsetVector)
+	if (not keyboard.getKeyDown(rightHandFreezeKey)):
+		alvr.controller_position[0][0] = lerp(alvr.controller_position[0][0], desiredRightHandPosition[0], lerpX30)
+		alvr.controller_position[0][1] = lerp(alvr.controller_position[0][1], desiredRightHandPosition[1], lerpX30)
+		alvr.controller_position[0][2] = lerp(alvr.controller_position[0][2], desiredRightHandPosition[2], lerpX30)
+		
+		alvr.controller_orientation[0][0] = forwardOrientation[0] + math.radians(rightHandRotation[2])
+		alvr.controller_orientation[0][1] = forwardOrientation[1] + math.radians(rightHandRotation[1])
+		alvr.controller_orientation[0][2] = forwardOrientation[2] + math.radians(rightHandRotation[0])
 	
-	#desiredControllerPosition[1] += headOffset[1]
-	
-	alvr.controller_position[0][0] = lerp(alvr.controller_position[0][0], desiredControllerPosition[0], lerpX30)
-	alvr.controller_position[0][1] = lerp(alvr.controller_position[0][1], desiredControllerPosition[1], lerpX30)
-	alvr.controller_position[0][2] = lerp(alvr.controller_position[0][2], desiredControllerPosition[2], lerpX30)
-	
-	#diagnostics.watch(alvr.controller_position[0][0])
-	
-	localLeftOffsetX = -0.04
-	localLeftOffsetY = -0.15
-	localLeftOffsetZ = 0.0
-	
-	if (keyboard.getPressed(handToggleKey)):
-		handToggle = not handToggle
+	leftHandOffset = [0,0,0,0]
 	
 	if (keyboard.getKeyDown(handForwardKey)):
-		localLeftOffsetZ += -0.2 #move hand forward 
+		leftHandOffset[2] += -0.2 #move hand forward 
 	elif (keyboard.getKeyDown(handBackwardKey)):
-		localLeftOffsetZ += 0.2 #move hand backward
-	if (keyboard.getPressed(Key.V)):
+		leftHandOffset[2] += 0.2 #move hand backward
+	if (keyboard.getPressed(handUpKey)):
 		leftHandUp = not leftHandUp
 	if (leftHandUp):
-		localLeftOffsetY = 0.1
-	
-	if (not keyboard.getKeyDown(Key.LeftAlt)):
-		if (handToggle or mouse.rightButton):
-			desiredControllerPositionLeft = add(desiredControllerPosition, rotatevec( forwardOrientation, [localLeftOffsetX, localLeftOffsetY, localLeftOffsetZ,0] ) )
+		leftHandOffset[1] = 0.3
+		
+	if (not keyboard.getKeyDown(leftHandFreezeKey)):
+		desiredLeftHandRotation = [0,0,0,0]
+		desiredLeftHandRotation[0] = alvr.head_orientation[0] + math.radians(leftHandRotation[2])
+		desiredLeftHandRotation[1] = alvr.head_orientation[1] + math.radians(leftHandRotation[1])
+		desiredLeftHandRotation[2] = alvr.head_orientation[2] + math.radians(leftHandRotation[0])
+		
+		if (leftHandActive):
+			if (rightHandActive):
+				desiredLeftHandPosition = add(desiredRightHandPosition, rotatevec( forwardOrientation,  leftHandOffset) )
+				desiredLeftHandPosition = add(desiredLeftHandPosition, rotatevec(alvr.controller_orientation[0], leftHandSnappedOffset))
+				desiredLeftHandRotation[0] = alvr.controller_orientation[0][0] + math.radians(leftHandRotation[2])
+				desiredLeftHandRotation[1] = alvr.controller_orientation[0][1] + math.radians(leftHandRotation[1])
+				desiredLeftHandRotation[2] = alvr.controller_orientation[0][2] + math.radians(leftHandRotation[0])
+			else:
+				leftHandOffset[2] += controllerOffsetZ
+				desiredLeftHandPosition = add(alvr.head_position, rotatevec( forwardOrientation, add(leftHandOffset, leftHandOffset) ) )
 		else:
-			desiredControllerPositionLeft = rotatevec( forwardOrientation, leftHandShiftedPosition )
-			desiredControllerPositionLeft[0] += alvr.head_position[0]
-			desiredControllerPositionLeft[1] += alvr.head_position[1]
-			desiredControllerPositionLeft[2] += alvr.head_position[2]
+			desiredLeftHandPosition = add(alvr.head_position, rotatevec( alvr.head_orientation, add(leftHandOffset, LeftHandShiftedPivot) ))
 	
-	alvr.controller_position[1][0] = lerp(alvr.controller_position[1][0], desiredControllerPositionLeft[0], lerpX30)
-	alvr.controller_position[1][1] = lerp(alvr.controller_position[1][1], desiredControllerPositionLeft[1], lerpX30)
-	alvr.controller_position[1][2] = lerp(alvr.controller_position[1][2], desiredControllerPositionLeft[2], lerpX30)
-	
-	alvr.controller_orientation[1][0] = alvr.controller_orientation[0][0] 
-	alvr.controller_orientation[1][1] = alvr.controller_orientation[0][1]
-	alvr.controller_orientation[1][2] = alvr.controller_orientation[0][2] - math.radians(60)
+		alvr.controller_position[1][0] = lerp(alvr.controller_position[1][0], desiredLeftHandPosition[0], lerpX30)
+		alvr.controller_position[1][1] = lerp(alvr.controller_position[1][1], desiredLeftHandPosition[1], lerpX30)
+		alvr.controller_position[1][2] = lerp(alvr.controller_position[1][2], desiredLeftHandPosition[2], lerpX30)
+		
+		alvr.controller_orientation[1][0] = desiredLeftHandRotation[0]
+		alvr.controller_orientation[1][1] = desiredLeftHandRotation[1]
+		alvr.controller_orientation[1][2] = desiredLeftHandRotation[2]
 	
 	alvr.trigger[1] = keyboard.getKeyDown(triggerKey)
 
@@ -636,7 +461,7 @@ if (deltaTime > 0.0):
 	
 	# Controller buttons
 	
-	trackpadClickNow = (not rightClick and (mouseBtnFwd or mouseBtnBack or touchX != 0))
+	trackpadClickNow = (not rightClick and (mouseBtnFwd or mouseBtnBack or keyboardRIGHT != 0))
 	
 	alvr.buttons[0][clickId] = trackpadClickNow
 	alvr.buttons[0][touchId] = True
@@ -649,3 +474,4 @@ if (deltaTime > 0.0):
 	
 	executeTime = time.time() - timestamp
 	diagnostics.watch(executeTime)
+	
