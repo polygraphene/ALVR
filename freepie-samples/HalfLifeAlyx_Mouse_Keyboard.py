@@ -48,13 +48,13 @@ crouchKey = Key.LeftControl
 # SETTINGS
 
 # When hand is not active it is shifted to the special position
-LeftHandShiftedPivot  = [-0.15, -0.15, -0.4, 0.0]
+LeftHandShiftedPivot  = [-0.25, -0.3, -0.4, 0.0]
 RightHandShiftedPivot = [ 0.25, -0.05, -0.6, 0.0]
 
 # When Left hand is active
 leftHandOffset = [ 0.0, -0.15, -0.6, 0.0]
 
-leftHandSnappedOffset = [ -0.05, -0.05, 0.1, 0.0]
+leftHandSnappedOffset = [ -0.05, -0.15, 0.1, 0.0]
 
 # Default hand positions from their pivot points
 LeftHandLocalPosition  = [0.0, 0.0, 0.0, 0.0]
@@ -70,7 +70,7 @@ BackpackHandOffset = [0.2, 0.0, 0.2, 0.0]
 
 MouseSensivity = 0.001
 
-WheelSensivity = 0.05
+WheelSensivity = 0.25
 
 StandingHeight = 1.7
 
@@ -268,7 +268,7 @@ if starting:
 	gunOffset = [-0.012,-0.015,0,0]
 	# Gun is not perfectly aligned with the hand orientation so we need to adjust hand rotation to aim along the iron sight line
 	rightHandRotation = [56.2, 0.8, 0.0, 0.0]
-	leftHandRotation =  [0.0, 0.0, 0.0, 0.0]
+	leftHandRotation =  [-30.0, 0.0, 0.0, 0.0]
 	timestamp = time.time()
 	leftClick = False
 	rightClick = False
@@ -441,7 +441,10 @@ if (deltaTime > 0.0):
 				desiredLeftHandRotation[2] = alvr.controller_orientation[0][2] + math.radians(leftHandRotation[0])
 			else:
 				leftHandOffset[2] += controllerOffsetZ
-				desiredLeftHandPosition = add(alvr.head_position, rotatevec( forwardOrientation, add(leftHandOffset, leftHandOffset) ) )
+				desiredLeftHandPosition = add(alvr.head_position, rotatevec( forwardOrientation, add(leftHandOffset, [0,0,-0.6+controllerOffsetZ,0]) ) )
+				desiredLeftHandRotation[0] = alvr.controller_orientation[0][0] + math.radians(leftHandRotation[2])
+				desiredLeftHandRotation[1] = alvr.controller_orientation[0][1] + math.radians(leftHandRotation[1])
+				desiredLeftHandRotation[2] = alvr.controller_orientation[0][2] + math.radians(leftHandRotation[0])
 		else:
 			desiredLeftHandPosition = add(alvr.head_position, rotatevec( alvr.head_orientation, add(leftHandOffset, LeftHandShiftedPivot) ))
 	
