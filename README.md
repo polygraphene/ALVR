@@ -4,6 +4,12 @@ ALVR is an open source remote VR display for Gear VR and Oculus Go/Quest. With i
 
 English | [Japanese](https://github.com/polygraphene/ALVR/blob/master/README-ja.md)
 
+## This repository is no longer maintained
+
+This repository is no longer maintained for a long time. ALVR is now actively developed on following repository.
+
+[https://github.com/JackD83/ALVR](https://github.com/JackD83/ALVR)
+
 ## Description
 
 ALVR streams VR display output from your PC to Gear VR / Oculus Go / Oculus Quest via Wi-Fi. This is similar to Riftcat or Trinus VR, but our purpose is optimization for Gear VR. ALVR provides smooth head-tracking compared to other apps in a Wi-Fi environment using Asynchronous Timewarp.
