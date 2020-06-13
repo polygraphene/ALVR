@@ -4,11 +4,20 @@ ALVR is an open source remote VR display for Gear VR and Oculus Go/Quest. With i
 
 English | [Japanese](https://github.com/polygraphene/ALVR/blob/master/README-ja.md)
 
+## Discord server
+
+Check the latest new about ALVR in [Discord server](https://discord.gg/KbKk3UM)
+
 ## This repository is no longer maintained
 
-This repository is no longer maintained for a long time. ALVR is now actively developed on following repository.
+This repository is not maintained for a long time.
+
+For Quest: Quest version is actively developed on following repository.
 
 [https://github.com/JackD83/ALVR](https://github.com/JackD83/ALVR)
+
+For GearVR and Go: Above repository is currently only for Quest.
+You can get unmaintained version on this repository (See below).
 
 ## Description
 
