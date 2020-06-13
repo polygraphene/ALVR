@@ -4,13 +4,20 @@ ALVRはPCVR(SteamVR)をリモートでプレイすることのできるオープ
 
 [English](https://github.com/polygraphene/ALVR/) | Japanese
 
+## Discord
+
+ALVRコミュニティのDiscordサーバができました。
+[Discord](https://discord.gg/KbKk3UM)
+
 ## このリポジトリについて
 
 このリポジトリは長期間メンテナンスされていません。
 
-有志により開発が継続されています。以下のリポジトリを参照してください。
+有志により開発が継続されています。以下のリポジトリを参照してください。(現在Questのみ対応)
 
 [https://github.com/JackD83/ALVR](https://github.com/JackD83/ALVR)
+
+For Gear VR & Go: このリポジトリから古いバージョンが利用可能です。導入方法は下記をご確認ください。
 
 ## 特徴
 ALVRはPCVRの画面をエンコードしWi-Fi経由でヘッドセットに転送します。似たソフトとしてRiftcatやTrinus VRがありますが、よりGear VR向けに特化しているのが特徴です。Wi-Fi経由でもGear VRに搭載されたAsynchronous Timewarpを利用してスムーズなヘッドトラッキングを実現します。
