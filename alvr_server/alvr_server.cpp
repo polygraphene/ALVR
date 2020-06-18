@@ -1243,7 +1243,7 @@ public:
 
 		Log(L"CRemoteHMD OnNewClient() Reset Projection and Set Resolution %dx%d", w, h);
 
-		m_displayComponent->SetProjection();
+		//m_displayComponent->SetProjection();
 
 		m_displayComponent->SetRecommendedRenderTargetSize(w, h);
 
