@@ -340,27 +340,22 @@ public:
 			l_pfTopPtr = pfTop;
 			l_pfBottomPtr = pfBottom;
 		}
-		bool noVR = Settings::Instance().m_noVR;
-		Log(noVR ? L"GetProjection noVR = TRUE" : L"GetProjection noVR = FALSE");
-		if (noVR) {
-			float customFOV = Settings::Instance().m_customFOV;
-			Log(L" m_noVR is TRUE! Set custom FOV %f", customFOV);
-			if (customFOV < 30 || customFOV > 160)
-				customFOV = 120;
-			float fov_rad = (customFOV * M_PI / 180.0f);
 
-			//Set FOV
-			*pfLeft = -fov_rad;
-			*pfRight = fov_rad;
-			*pfTop = -fov_rad;
-			*pfBottom = fov_rad;
-		}
-		else {
-			*pfLeft = -1.0f;
-			*pfRight = 1.0f;
-			*pfTop = -1.0f;
-			*pfBottom = 1.0f;
-		}
+		float customFOV = Settings::Instance().m_customFOV;
+
+		if (customFOV < 30 || customFOV > 180)
+			customFOV = 90;
+
+		Log(L" Set custom FOV %f", customFOV);
+
+		float fov_rad = (customFOV * M_PI / 180.0f);
+
+		//Set FOV
+		*pfLeft = -fov_rad;
+		*pfRight = fov_rad;
+		*pfTop = -fov_rad;
+		*pfBottom = fov_rad;
+		
 		Log(L"GetProjectionRaw %d", eEye);
 	}
 
@@ -380,14 +375,17 @@ public:
 class DirectModeComponent : public vr::IVRDriverDirectModeComponent
 {
 public:
+	bool m_isFake = false;
 	DirectModeComponent(std::shared_ptr<CD3DRender> pD3DRender,
 		std::shared_ptr<CEncoder> pEncoder,
 		std::shared_ptr<Listener> Listener,
-		std::shared_ptr<RecenterManager> recenterManager)
+		std::shared_ptr<RecenterManager> recenterManager,
+		bool isFake)
 		: m_pD3DRender(pD3DRender)
 		, m_pEncoder(pEncoder)
 		, m_Listener(Listener)
 		, m_recenterManager(recenterManager)
+		, m_isFake(isFake)
 		, m_poseMutex(NULL)
 		, m_submitLayer(0)
 		, m_LastReferencedFrameIndex(0) 
@@ -395,6 +393,8 @@ public:
 	}
 
 	void OnPoseUpdated(TrackingInfo &info) {
+		if (m_isFake)
+			return;
 		// Put pose history buffer
 		TrackingHistoryFrame history;
 		history.info = info;
@@ -531,6 +531,8 @@ public:
 	* using CreateSwapTextureSet and should be alternated per frame.  Call Present once all layers have been submitted. */
 	virtual void SubmitLayer(const SubmitLayerPerEye_t(&perEye)[2], const vr::HmdMatrix34_t *pPose) override
 	{
+		if (m_isFake)
+			return;
 		/*Log(L"SubmitLayer Handles=%p,%p DepthHandles=%p,%p %f-%f,%f-%f %f-%f,%f-%f\n%f,%f,%f,%f\n%f,%f,%f,%f\n%f,%f,%f,%f"
 			, perEye[0].hTexture, perEye[1].hTexture, perEye[0].hDepthTexture, perEye[1].hDepthTexture
 			, perEye[0].bounds.uMin, perEye[0].bounds.uMax, perEye[0].bounds.vMin, perEye[0].bounds.vMax
@@ -616,6 +618,8 @@ public:
 	/** Submits queued layers for display. */
 	virtual void Present(vr::SharedTextureHandle_t syncTexture) override
 	{
+		if (m_isFake)
+			return;
 		bool useMutex = Settings::Instance().m_UseKeyedMutex;
 		//Log(L"Present syncTexture=%p (use:%d) m_prevSubmitFrameIndex=%llu m_submitFrameIndex=%llu", syncTexture, useMutex, m_prevSubmitFrameIndex, m_submitFrameIndex);
 
@@ -671,7 +675,8 @@ public:
 	}
 
 	void CopyTexture(uint32_t layerCount) {
-
+		if (m_isFake)
+			return;
 		uint64_t presentationTime = GetTimestampUs();
 
 		ID3D11Texture2D *pTexture[MAX_LAYERS][2];
@@ -754,6 +759,7 @@ public:
 		m_pD3DRender->GetContext()->Flush();
 	}
 
+	
 private:
 	std::shared_ptr<CD3DRender> m_pD3DRender;
 	std::shared_ptr<CEncoder> m_pEncoder;
@@ -885,7 +891,7 @@ public:
 			auto modelNumber = vr::VRProperties()->GetStringProperty(props, vr::Prop_ModelNumber_String);
 			auto renderModel = vr::VRProperties()->GetStringProperty(props, vr::Prop_RenderModelName_String);
 
-			Log(L"Controller already present %d = %s %s\n", 1, modelNumber.c_str(), renderModel.c_str());
+			Log(L"Controller already present %d = %hs %hs\n", 1, modelNumber.c_str(), renderModel.c_str());
 		}
 
 		//add right controller immediately if fake vr is enabled 
@@ -919,7 +925,6 @@ public:
 		// Manually send VSync events on direct mode. ref:https://github.com/ValveSoftware/virtual_display/issues/1
 		vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, vr::Prop_DriverDirectModeSendsVsyncEvents_Bool, true);
 
-		float originalIPD = vr::VRSettings()->GetFloat(vr::k_pch_SteamVR_Section, vr::k_pch_SteamVR_IPD_Float);
 		vr::VRSettings()->SetFloat(vr::k_pch_SteamVR_Section, vr::k_pch_SteamVR_IPD_Float, Settings::Instance().m_flIPD);
 
 		m_D3DRender = std::make_shared<CD3DRender>();
@@ -975,8 +980,7 @@ public:
 		m_VSyncThread->Start();
 
 		m_displayComponent = std::make_shared<DisplayComponent>();
-		m_directModeComponent = std::make_shared<DirectModeComponent>(m_D3DRender, m_encoder, m_Listener, m_recenterManager);
-
+		m_directModeComponent = std::make_shared<DirectModeComponent>(m_D3DRender, m_encoder, m_Listener, m_recenterManager, Settings::Instance().m_noVR);
 		return vr::VRInitError_None;
 	}
 

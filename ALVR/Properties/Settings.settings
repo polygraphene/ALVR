@@ -87,7 +87,7 @@
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="CustomFOV" Type="System.String" Scope="User">
-      <Value Profile="(Default)">120</Value>
+      <Value Profile="(Default)">90</Value>
     </Setting>
   </Settings>
 </SettingsFile>

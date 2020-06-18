@@ -235,7 +235,7 @@ private:
 		}
 		float deltaTime = float(clock() - mlastUpdateTime) / CLOCKS_PER_SEC;
 
-		if (deltaTime >= 0.001f) 
+		if (deltaTime >= 0.0001f) 
 		{
 			auto data = m_freePIE->GetData();
 			bool enableControllerButton = data.flags & FreePIE::ALVR_FREEPIE_FLAG_OVERRIDE_BUTTONS;
