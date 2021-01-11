@@ -13,11 +13,11 @@ ALVRコミュニティのDiscordサーバができました。
 
 このリポジトリは長期間メンテナンスされていません。
 
-有志により開発が継続されています。以下のリポジトリを参照してください。(現在Questのみ対応)
+有志により開発が継続されています。以下のリポジトリを参照してください。Go/Quest/Quest2に対応しています。
 
-[https://github.com/JackD83/ALVR](https://github.com/JackD83/ALVR)
+[https://github.com/alvr-org/ALVR](https://github.com/alvr-org/ALVR)
 
-For Gear VR & Go: このリポジトリから古いバージョンが利用可能です。導入方法は下記をご確認ください。
+For Gear VR: このリポジトリから古いバージョンが利用可能です。導入方法は下記をご確認ください。
 
 ## 特徴
 ALVRはPCVRの画面をエンコードしWi-Fi経由でヘッドセットに転送します。似たソフトとしてRiftcatやTrinus VRがありますが、よりGear VR向けに特化しているのが特徴です。Wi-Fi経由でもGear VRに搭載されたAsynchronous Timewarpを利用してスムーズなヘッドトラッキングを実現します。
@@ -64,6 +64,7 @@ ALVRはPCVRの画面をエンコードしWi-Fi経由でヘッドセットに転�
 ### GearVR / Oculus Go: Oculus Storeからインストール
 
 Oculus Storeから"Oculus Key"を使ってインストールできるようになりました。
+**現在停止中です。apkでのインストールをご利用ください。**
 
 1. スマートフォンで[Oculus Key配布ページ](https://alvr-dist.appspot.com/)を開く
 2. "Get Key"を押してキーを取得しコピー
