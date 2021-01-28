@@ -65,15 +65,25 @@ ALVR requires any of the following devices:
 
 ### For Quest: Install from apk
 
-- Need to enable developer option for Quest.
-- Download apk from [Releases](https://github.com/polygraphene/ALVR/releases)
-- Check [Installation](https://github.com/polygraphene/ALVR/wiki/Installation).
+- Use [https://github.com/alvr-org/ALVR](https://github.com/alvr-org/ALVR) instead.
+- ~~Need to enable developer option for Quest.~~
+- ~~Download apk from [Releases](https://github.com/polygraphene/ALVR/releases)~~
+- ~~Check [Installation](https://github.com/polygraphene/ALVR/wiki/Installation).~~
 
-### For GearVR and Go: Oculus Store
+### ~~For GearVR and Go: Oculus Store~~
 
-- You can download ALVR Client from Oculus Store with key.
-- Open [the key distribution page](https://alvr-dist.appspot.com/) on your smartphone and follow the instruction.
-  - <span style="color:red">Currently, installation from Oculus Store is stopped.</span> Try apk installation instead.
+- ~~You can download ALVR Client from Oculus Store with key.~~
+- ~~Open the key distribution page on your smartphone and follow the instruction.~~
+- ALVR is no longer available on Oculus Store. Use apk method instead. See [issue 695](https://github.com/polygraphene/ALVR/issues/695#issuecomment-769342707)
+
+### For GearVR: Install from apk
+
+- It's a very complex method to install and I can't support it. Try [googling](https://www.google.com/search?q=gearvr+osig+apk+sideload) for detail.
+1. Get osig file from oculus website
+2. Install Apk Editor
+3. Download apk from Releases
+4. Open apk and put osig file on assets folder
+5. Build and install
 
 ## Usage
 
