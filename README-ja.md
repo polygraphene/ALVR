@@ -18,6 +18,9 @@ ALVRコミュニティのDiscordサーバができました。
 [https://github.com/alvr-org/ALVR](https://github.com/alvr-org/ALVR)
 
 For Gear VR: このリポジトリから古いバージョンが利用可能です。導入方法は下記をご確認ください。
+**Oculus Storeでの配布は終了しました。**
+apkからのインストールは引き続き可能ですが、複雑な手順のためわかる方のみお願いします。
+詳しくは[Google検索](https://www.google.com/search?q=gearvr+osig+apk+sideload)にて。
 
 ## 特徴
 ALVRはPCVRの画面をエンコードしWi-Fi経由でヘッドセットに転送します。似たソフトとしてRiftcatやTrinus VRがありますが、よりGear VR向けに特化しているのが特徴です。Wi-Fi経由でもGear VRに搭載されたAsynchronous Timewarpを利用してスムーズなヘッドトラッキングを実現します。
@@ -57,20 +60,16 @@ ALVRはPCVRの画面をエンコードしWi-Fi経由でヘッドセットに転�
 
 ### Oculus Quest: apkのインストール
 
-1. Oculus Questではapkのインストール(サイドローディング)が必要です。
-2. 開発者オプションを有効にする必要があります。
-3. 手順:[Installation](https://github.com/polygraphene/ALVR/wiki/Installation).
+- [https://github.com/alvr-org/ALVR](https://github.com/alvr-org/ALVR) からインストールしてご利用ください。
 
 ### GearVR / Oculus Go: Oculus Storeからインストール
 
-Oculus Storeから"Oculus Key"を使ってインストールできるようになりました。
-**現在停止中です。apkでのインストールをご利用ください。**
+~~Oculus Storeから"Oculus Key"を使ってインストールできるようになりました。~~
+**Oculus Storeでの配布は終了しました。**
 
-1. スマートフォンで[Oculus Key配布ページ](https://alvr-dist.appspot.com/)を開く
-2. "Get Key"を押してキーを取得しコピー
-3-a. Androidの場合、Oculusアプリを開き、"もっと見る"(または"設定")をタップ
-3-b. iPhoneの場合は[Oculusのウェブサイト](https://secure.oculus.com/redeem-code)を開きログインする
-4. "コードを利用"を開き、キーを貼り付け
+### GearVR : apkからインストール
+
+- 非常に複雑な手順でサポートもできません。詳しくは[Google検索](https://www.google.com/search?q=gearvr+osig+apk+sideload)にて。
 
 ## 使い方
 
