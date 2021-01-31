@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <stdint.h>
 #include <time.h>
 
@@ -7,52 +8,121 @@ class Statistics {
 public:
 	Statistics() {
 		ResetAll();
-		m_current = time(NULL);
+		mCurrent = time(NULL);
 	}
 
 	void ResetAll() {
-		m_packetsSentTotal = 0;
-		m_packetsSentInSecond = 0;
-		m_packetsSentInSecondPrev = 0;
-		m_bitsSentTotal = 0;
-		m_bitsSentInSecond = 0;
-		m_bitsSentInSecondPrev = 0;
+		mPacketsSentTotal = 0;
+		mPacketsSentInSecond = 0;
+		mPacketsSentInSecondPrev = 0;
+		mBitsSentTotal = 0;
+		mBitsSentInSecond = 0;
+		mBitsSentInSecondPrev = 0;
+
+		mFramesInSecond = 0;
+		mFramesPrevious = 0;
+
+		mEncodeLatencyTotalUs = 0;
+		mEncodeLatencyMin = 0;
+		mEncodeLatencyMax = 0;
+		mEncodeSampleCount = 0;
+		mEncodeLatencyAveragePrev = 0;
+		mEncodeLatencyMinPrev = 0;
+		mEncodeLatencyMaxPrev = 0;
 	}
 
 	void CountPacket(int bytes) {
-		time_t current = time(NULL);
-		if (m_current != current) {
-			m_current = current;
-			m_packetsSentInSecondPrev = m_packetsSentInSecond;
-			m_bitsSentInSecondPrev = m_bitsSentInSecond;
-			m_packetsSentInSecond = 0;
-			m_bitsSentInSecond = 0;
-		}
-		m_packetsSentTotal++;
-		m_packetsSentInSecond++;
-		m_bitsSentTotal += bytes * 8;
-		m_bitsSentInSecond += bytes * 8;
+		CheckAndResetSecond();
+
+		mPacketsSentTotal++;
+		mPacketsSentInSecond++;
+		mBitsSentTotal += bytes * 8;
+		mBitsSentInSecond += bytes * 8;
+	}
+
+	void EncodeOutput(uint64_t latencyUs) {
+		CheckAndResetSecond();
+
+		mFramesInSecond++;
+		mEncodeLatencyTotalUs += latencyUs;
+		mEncodeLatencyMin = std::min(latencyUs, mEncodeLatencyMin);
+		mEncodeLatencyMax = std::max(latencyUs, mEncodeLatencyMax);
+		mEncodeSampleCount++;
 	}
 
 	uint64_t GetPacketsSentTotal() {
-		return m_packetsSentTotal;
+		return mPacketsSentTotal;
 	}
 	uint64_t GetPacketsSentInSecond() {
-		return m_packetsSentInSecondPrev;
+		return mPacketsSentInSecondPrev;
 	}
 	uint64_t GetBitsSentTotal() {
-		return m_bitsSentTotal;
+		return mBitsSentTotal;
 	}
 	uint64_t GetBitsSentInSecond() {
-		return m_bitsSentInSecondPrev;
+		return mBitsSentInSecondPrev;
+	}
+	uint32_t GetFPS() {
+		return mFramesPrevious;
+	}
+	uint64_t GetEncodeLatencyAverage() {
+		return mEncodeLatencyAveragePrev;
+	}
+	uint64_t GetEncodeLatencyMin() {
+		return mEncodeLatencyMinPrev;
+	}
+	uint64_t GetEncodeLatencyMax() {
+		return mEncodeLatencyMaxPrev;
 	}
 private:
-	uint64_t m_packetsSentTotal;
-	uint64_t m_packetsSentInSecond;
-	uint64_t m_packetsSentInSecondPrev;
-	uint64_t m_bitsSentTotal;
-	uint64_t m_bitsSentInSecond;
-	uint64_t m_bitsSentInSecondPrev;
+	void ResetSecond() {
+		mPacketsSentInSecondPrev = mPacketsSentInSecond;
+		mBitsSentInSecondPrev = mBitsSentInSecond;
+		mPacketsSentInSecond = 0;
+		mBitsSentInSecond = 0;
 
-	time_t m_current;
+		mFramesPrevious = mFramesInSecond;
+		mFramesInSecond = 0;
+
+		mEncodeLatencyMinPrev = mEncodeLatencyMin;
+		mEncodeLatencyMaxPrev = mEncodeLatencyMax;
+		if (mEncodeSampleCount == 0) {
+			mEncodeLatencyAveragePrev = 0;
+		}else{
+			mEncodeLatencyAveragePrev = mEncodeLatencyTotalUs / mEncodeSampleCount;
+		}
+		mEncodeLatencyTotalUs = 0;
+		mEncodeSampleCount = 0;
+		mEncodeLatencyMin = UINT64_MAX;
+		mEncodeLatencyMax = 0;
+	}
+
+	void CheckAndResetSecond() {
+		time_t current = time(NULL);
+		if (mCurrent != current) {
+			mCurrent = current;
+			ResetSecond();
+		}
+	}
+
+	uint64_t mPacketsSentTotal;
+	uint64_t mPacketsSentInSecond;
+	uint64_t mPacketsSentInSecondPrev;
+
+	uint64_t mBitsSentTotal;
+	uint64_t mBitsSentInSecond;
+	uint64_t mBitsSentInSecondPrev;
+
+	uint32_t mFramesInSecond;
+	uint32_t mFramesPrevious;
+
+	uint64_t mEncodeLatencyTotalUs;
+	uint64_t mEncodeLatencyMin;
+	uint64_t mEncodeLatencyMax;
+	uint64_t mEncodeSampleCount;
+	uint64_t mEncodeLatencyAveragePrev;
+	uint64_t mEncodeLatencyMinPrev;
+	uint64_t mEncodeLatencyMaxPrev;
+
+	time_t mCurrent;
 };

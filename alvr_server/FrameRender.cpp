@@ -5,11 +5,11 @@
 #include "Settings.h"
 #include "WICTextureLoader.h"
 
-extern uint64_t g_DriverTestMode;
+extern uint64_t gDriverTestMode;
 
 
 FrameRender::FrameRender(std::shared_ptr<CD3DRender> pD3DRender)
-	: m_pD3DRender(pD3DRender)
+	: mD3DRender(pD3DRender)
 {
 }
 
@@ -20,7 +20,7 @@ FrameRender::~FrameRender()
 
 bool FrameRender::Startup()
 {
-	if (m_pStagingTexture) {
+	if (mStagingTexture) {
 		return true;
 	}
 
@@ -31,8 +31,8 @@ bool FrameRender::Startup()
 
 	D3D11_TEXTURE2D_DESC stagingTextureDesc;
 	ZeroMemory(&stagingTextureDesc, sizeof(stagingTextureDesc));
-	stagingTextureDesc.Width = Settings::Instance().m_renderWidth;
-	stagingTextureDesc.Height = Settings::Instance().m_renderHeight;
+	stagingTextureDesc.Width = Settings::Instance().mRenderWidth;
+	stagingTextureDesc.Height = Settings::Instance().mRenderHeight;
 	stagingTextureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	stagingTextureDesc.MipLevels = 1;
 	stagingTextureDesc.ArraySize = 1;
@@ -40,15 +40,15 @@ bool FrameRender::Startup()
 	stagingTextureDesc.Usage = D3D11_USAGE_DEFAULT;
 	stagingTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 
-	if (FAILED(m_pD3DRender->GetDevice()->CreateTexture2D(&stagingTextureDesc, NULL, &m_pStagingTexture)))
+	if (FAILED(mD3DRender->GetDevice()->CreateTexture2D(&stagingTextureDesc, NULL, &mStagingTexture)))
 	{
-		Log("Failed to create staging texture!");
+		Log(L"Failed to create staging texture!");
 		return false;
 	}
 
-	HRESULT hr = m_pD3DRender->GetDevice()->CreateRenderTargetView(m_pStagingTexture.Get(), NULL, &m_pRenderTargetView);
+	HRESULT hr = mD3DRender->GetDevice()->CreateRenderTargetView(mStagingTexture.Get(), NULL, &mRenderTargetView);
 	if (FAILED(hr)) {
-		Log("CreateRenderTargetView %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreateRenderTargetView %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
@@ -66,9 +66,9 @@ bool FrameRender::Startup()
 	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	descDepth.CPUAccessFlags = 0;
 	descDepth.MiscFlags = 0;
-	hr = m_pD3DRender->GetDevice()->CreateTexture2D(&descDepth, nullptr, &m_pDepthStencil);
+	hr = mD3DRender->GetDevice()->CreateTexture2D(&descDepth, nullptr, &mDepthStencil);
 	if (FAILED(hr)) {
-		Log("CreateTexture2D %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreateTexture2D %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
@@ -79,22 +79,22 @@ bool FrameRender::Startup()
 	descDSV.Format = descDepth.Format;
 	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	descDSV.Texture2D.MipSlice = 0;
-	hr = m_pD3DRender->GetDevice()->CreateDepthStencilView(m_pDepthStencil.Get(), &descDSV, &m_pDepthStencilView);
+	hr = mD3DRender->GetDevice()->CreateDepthStencilView(mDepthStencil.Get(), &descDSV, &mDepthStencilView);
 	if (FAILED(hr)) {
-		Log("CreateDepthStencilView %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreateDepthStencilView %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
-	m_pD3DRender->GetContext()->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
+	mD3DRender->GetContext()->OMSetRenderTargets(1, mRenderTargetView.GetAddressOf(), mDepthStencilView.Get());
 
 	D3D11_VIEWPORT viewport;
-	viewport.Width = (float)Settings::Instance().m_renderWidth;
-	viewport.Height = (float)Settings::Instance().m_renderHeight;
+	viewport.Width = (float)Settings::Instance().mRenderWidth;
+	viewport.Height = (float)Settings::Instance().mRenderHeight;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
-	m_pD3DRender->GetContext()->RSSetViewports(1, &viewport);
+	mD3DRender->GetContext()->RSSetViewports(1, &viewport);
 
 	//
 	// Compile shaders
@@ -102,25 +102,25 @@ bool FrameRender::Startup()
 	
 	std::vector<char> vshader;
 	if (!ReadBinaryResource(vshader, IDR_VS)) {
-		Log("Failed to load resource for IDR_VS.");
+		Log(L"Failed to load resource for IDR_VS.");
 		return false;
 	}
 
-	hr = m_pD3DRender->GetDevice()->CreateVertexShader((const DWORD*)&vshader[0], vshader.size(), NULL, &m_pVertexShader);
+	hr = mD3DRender->GetDevice()->CreateVertexShader((const DWORD*)&vshader[0], vshader.size(), NULL, &mVertexShader);
 	if (FAILED(hr)) {
-		Log("CreateVertexShader %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreateVertexShader %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
 	std::vector<char> pshader;
 	if (!ReadBinaryResource(pshader, IDR_PS)) {
-		Log("Failed to load resource for IDR_PS.");
+		Log(L"Failed to load resource for IDR_PS.");
 		return false;
 	}
 
-	hr = m_pD3DRender->GetDevice()->CreatePixelShader((const DWORD*)&pshader[0], pshader.size(), NULL, &m_pPixelShader);
+	hr = mD3DRender->GetDevice()->CreatePixelShader((const DWORD*)&pshader[0], pshader.size(), NULL, &mPixelShader);
 	if (FAILED(hr)) {
-		Log("CreatePixelShader %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreatePixelShader %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
@@ -139,15 +139,15 @@ bool FrameRender::Startup()
 
 
 	// Create the input layout
-	hr = m_pD3DRender->GetDevice()->CreateInputLayout(layout, numElements, &vshader[0],
-		vshader.size(), &m_pVertexLayout);
+	hr = mD3DRender->GetDevice()->CreateInputLayout(layout, numElements, &vshader[0],
+		vshader.size(), &mVertexLayout);
 	if (FAILED(hr)) {
-		Log("CreateInputLayout %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreateInputLayout %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
 	// Set the input layout
-	m_pD3DRender->GetContext()->IASetInputLayout(m_pVertexLayout.Get());
+	mD3DRender->GetContext()->IASetInputLayout(mVertexLayout.Get());
 
 	//
 	// Create vertex buffer
@@ -163,16 +163,16 @@ bool FrameRender::Startup()
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
-	hr = m_pD3DRender->GetDevice()->CreateBuffer(&bd, NULL, &m_pVertexBuffer);
+	hr = mD3DRender->GetDevice()->CreateBuffer(&bd, NULL, &mVertexBuffer);
 	if (FAILED(hr)) {
-		Log("CreateBuffer 1 %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreateBuffer 1 %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
 	// Set vertex buffer
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
-	m_pD3DRender->GetContext()->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
+	mD3DRender->GetContext()->IASetVertexBuffers(0, 1, mVertexBuffer.GetAddressOf(), &stride, &offset);
 	
 	//
 	// Create index buffer
@@ -196,17 +196,17 @@ bool FrameRender::Startup()
 	ZeroMemory(&InitData, sizeof(InitData));
 	InitData.pSysMem = indices;
 
-	hr = m_pD3DRender->GetDevice()->CreateBuffer(&bd, &InitData, &m_pIndexBuffer);
+	hr = mD3DRender->GetDevice()->CreateBuffer(&bd, &InitData, &mIndexBuffer);
 	if (FAILED(hr)) {
-		Log("CreateBuffer 2 %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreateBuffer 2 %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
 	// Set index buffer
-	m_pD3DRender->GetContext()->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+	mD3DRender->GetContext()->IASetIndexBuffer(mIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 
 	// Set primitive topology
-	m_pD3DRender->GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	mD3DRender->GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Create the sample state
 	D3D11_SAMPLER_DESC sampDesc;
@@ -218,9 +218,9 @@ bool FrameRender::Startup()
 	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 	sampDesc.MinLOD = 0;
 	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-	hr = m_pD3DRender->GetDevice()->CreateSamplerState(&sampDesc, &m_pSamplerLinear);
+	hr = mD3DRender->GetDevice()->CreateSamplerState(&sampDesc, &mSamplerLinear);
 	if (FAILED(hr)) {
-		Log("CreateSamplerState %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreateSamplerState %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
@@ -230,11 +230,11 @@ bool FrameRender::Startup()
 
 	std::vector<char> fontBuffer;
 	if (ReadBinaryResource(fontBuffer, IDR_FONT)) {
-		m_Font = std::make_unique<DirectX::SpriteFont>(m_pD3DRender->GetDevice(), (uint8_t *)&fontBuffer[0], fontBuffer.size());
-		m_SpriteBatch = std::make_unique<DirectX::SpriteBatch>(m_pD3DRender->GetContext());
+		mFont = std::make_unique<DirectX::SpriteFont>(mD3DRender->GetDevice(), (uint8_t *)&fontBuffer[0], fontBuffer.size());
+		mSpriteBatch = std::make_unique<DirectX::SpriteBatch>(mD3DRender->GetContext());
 	}
 	else {
-		Log("FindResource failed %d", GetLastError());
+		Log(L"FindResource failed %d", GetLastError());
 	}
 
 	//
@@ -260,9 +260,9 @@ bool FrameRender::Startup()
 		BlendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN | D3D11_COLOR_WRITE_ENABLE_BLUE;
 	}
 
-	hr = m_pD3DRender->GetDevice()->CreateBlendState(&BlendDesc, &m_pBlendStateFirst);
+	hr = mD3DRender->GetDevice()->CreateBlendState(&BlendDesc, &mBlendStateFirst);
 	if (FAILED(hr)) {
-		Log("CreateBlendState %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreateBlendState %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
@@ -280,15 +280,15 @@ bool FrameRender::Startup()
 		BlendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	}
 
-	hr = m_pD3DRender->GetDevice()->CreateBlendState(&BlendDesc, &m_pBlendState);
+	hr = mD3DRender->GetDevice()->CreateBlendState(&BlendDesc, &mBlendState);
 	if (FAILED(hr)) {
-		Log("CreateBlendState %p %s", hr, GetDxErrorStr(hr).c_str());
+		Log(L"CreateBlendState %p %s", hr, GetErrorStr(hr).c_str());
 		return false;
 	}
 
 	CreateResourceTexture();
 
-	Log("Staging Texture created");
+	Log(L"Staging Texture created");
 
 	return true;
 }
@@ -297,20 +297,20 @@ bool FrameRender::Startup()
 bool FrameRender::RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBounds_t bounds[][2], int layerCount, bool recentering, const std::string &message, const std::string& debugText)
 {
 	// Set render target
-	m_pD3DRender->GetContext()->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
+	mD3DRender->GetContext()->OMSetRenderTargets(1, mRenderTargetView.GetAddressOf(), mDepthStencilView.Get());
 
 	// Set viewport
 	D3D11_VIEWPORT viewport;
-	viewport.Width = (float)Settings::Instance().m_renderWidth;
-	viewport.Height = (float)Settings::Instance().m_renderHeight;
+	viewport.Width = (float)Settings::Instance().mRenderWidth;
+	viewport.Height = (float)Settings::Instance().mRenderHeight;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
-	m_pD3DRender->GetContext()->RSSetViewports(1, &viewport);
+	mD3DRender->GetContext()->RSSetViewports(1, &viewport);
 
 	// Clear the back buffer
-	m_pD3DRender->GetContext()->ClearRenderTargetView(m_pRenderTargetView.Get(), DirectX::Colors::MidnightBlue);
+	mD3DRender->GetContext()->ClearRenderTargetView(mRenderTargetView.Get(), DirectX::Colors::MidnightBlue);
 
 	// Overlay recentering texture on top of all layers.
 	int recenterLayer = -1;
@@ -324,8 +324,8 @@ bool FrameRender::RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBound
 		vr::VRTextureBounds_t bound[2];
 
 		if (i == recenterLayer) {
-			textures[0] = (ID3D11Texture2D *)m_recenterTexture.Get();
-			textures[1] = (ID3D11Texture2D *)m_recenterTexture.Get();
+			textures[0] = (ID3D11Texture2D *)mRecenterTexture.Get();
+			textures[1] = (ID3D11Texture2D *)mRecenterTexture.Get();
 			bound[0].uMin = bound[0].vMin = bound[1].uMin = bound[1].vMin = 0.0f;
 			bound[0].uMax = bound[0].vMax = bound[1].uMax = bound[1].vMax = 1.0f;
 		}
@@ -336,16 +336,16 @@ bool FrameRender::RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBound
 			bound[1] = bounds[i][1];
 		}
 		if (textures[0] == NULL || textures[1] == NULL) {
-			Log("Ignore NULL layer. layer=%d/%d%s%s", i, layerCount
-				, recentering ? " (recentering)" : "", !message.empty() ? " (message)" : "");
+			Log(L"Ignore NULL layer. layer=%d/%d%s%s", i, layerCount
+				, recentering ? L" (recentering)" : L"", !message.empty() ? L" (message)" : L"");
 			continue;
 		}
 
 		D3D11_TEXTURE2D_DESC srcDesc;
 		textures[0]->GetDesc(&srcDesc);
 
-		Log("RenderFrame layer=%d/%d %dx%d %d%s%s", i, layerCount, srcDesc.Width, srcDesc.Height, srcDesc.Format
-			, recentering ? " (recentering)" : "", !message.empty() ? " (message)" : "");
+		Log(L"RenderFrame layer=%d/%d %dx%d %d%s%s", i, layerCount, srcDesc.Width, srcDesc.Height, srcDesc.Format
+			, recentering ? L" (recentering)" : L"", !message.empty() ? L" (message)" : L"");
 
 		D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
 		SRVDesc.Format = srcDesc.Format;
@@ -355,27 +355,27 @@ bool FrameRender::RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBound
 
 		ComPtr<ID3D11ShaderResourceView> pShaderResourceView[2];
 
-		HRESULT hr = m_pD3DRender->GetDevice()->CreateShaderResourceView(textures[0], &SRVDesc, pShaderResourceView[0].ReleaseAndGetAddressOf());
+		HRESULT hr = mD3DRender->GetDevice()->CreateShaderResourceView(textures[0], &SRVDesc, pShaderResourceView[0].ReleaseAndGetAddressOf());
 		if (FAILED(hr)) {
-			Log("CreateShaderResourceView %p %s", hr, GetDxErrorStr(hr).c_str());
+			Log(L"CreateShaderResourceView %p %s", hr, GetErrorStr(hr).c_str());
 			return false;
 		}
-		hr = m_pD3DRender->GetDevice()->CreateShaderResourceView(textures[1], &SRVDesc, pShaderResourceView[1].ReleaseAndGetAddressOf());
+		hr = mD3DRender->GetDevice()->CreateShaderResourceView(textures[1], &SRVDesc, pShaderResourceView[1].ReleaseAndGetAddressOf());
 		if (FAILED(hr)) {
-			Log("CreateShaderResourceView %p %s", hr, GetDxErrorStr(hr).c_str());
+			Log(L"CreateShaderResourceView %p %s", hr, GetErrorStr(hr).c_str());
 			return false;
 		}
 		
 		if (i == 0) {
-			m_pD3DRender->GetContext()->OMSetBlendState(m_pBlendStateFirst.Get(), NULL, 0xffffffff);
+			mD3DRender->GetContext()->OMSetBlendState(mBlendStateFirst.Get(), NULL, 0xffffffff);
 		}
 		else {
-			m_pD3DRender->GetContext()->OMSetBlendState(m_pBlendState.Get(), NULL, 0xffffffff);
+			mD3DRender->GetContext()->OMSetBlendState(mBlendState.Get(), NULL, 0xffffffff);
 		}
 		
 		// Clear the depth buffer to 1.0 (max depth)
 		// We need clear depth buffer to correctly render layers.
-		m_pD3DRender->GetContext()->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+		mD3DRender->GetContext()->ClearDepthStencilView(mDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 		//
 		// Update uv-coordinates in vertex buffer according to bounds.
@@ -399,17 +399,17 @@ bool FrameRender::RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBound
 		//m_pD3DRender->GetContext()->UpdateSubresource(m_pVertexBuffer.Get(), 0, nullptr, &vertices, 0, 0);
 
 		D3D11_MAPPED_SUBRESOURCE mapped = { 0 };
-		hr = m_pD3DRender->GetContext()->Map(m_pVertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+		hr = mD3DRender->GetContext()->Map(mVertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 		if (FAILED(hr)) {
-			Log("Map %p %s", hr, GetDxErrorStr(hr).c_str());
+			Log(L"Map %p %s", hr, GetErrorStr(hr).c_str());
 			return false;
 		}
 		memcpy(mapped.pData, vertices, sizeof(vertices));
 
-		m_pD3DRender->GetContext()->Unmap(m_pVertexBuffer.Get(), 0);
+		mD3DRender->GetContext()->Unmap(mVertexBuffer.Get(), 0);
 
 		// Set the input layout
-		m_pD3DRender->GetContext()->IASetInputLayout(m_pVertexLayout.Get());
+		mD3DRender->GetContext()->IASetInputLayout(mVertexLayout.Get());
 
 		//
 		// Set buffers
@@ -417,28 +417,28 @@ bool FrameRender::RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBound
 
 		UINT stride = sizeof(SimpleVertex);
 		UINT offset = 0;
-		m_pD3DRender->GetContext()->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
+		mD3DRender->GetContext()->IASetVertexBuffers(0, 1, mVertexBuffer.GetAddressOf(), &stride, &offset);
 
-		m_pD3DRender->GetContext()->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-		m_pD3DRender->GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		mD3DRender->GetContext()->IASetIndexBuffer(mIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+		mD3DRender->GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		//
 		// Set shaders
 		//
 
-		m_pD3DRender->GetContext()->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-		m_pD3DRender->GetContext()->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
+		mD3DRender->GetContext()->VSSetShader(mVertexShader.Get(), nullptr, 0);
+		mD3DRender->GetContext()->PSSetShader(mPixelShader.Get(), nullptr, 0);
 
 		ID3D11ShaderResourceView *shaderResourceView[2] = { pShaderResourceView[0].Get(), pShaderResourceView[1].Get() };
-		m_pD3DRender->GetContext()->PSSetShaderResources(0, 2, shaderResourceView);
+		mD3DRender->GetContext()->PSSetShaderResources(0, 2, shaderResourceView);
 
-		m_pD3DRender->GetContext()->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+		mD3DRender->GetContext()->PSSetSamplers(0, 1, mSamplerLinear.GetAddressOf());
 		
 		//
 		// Draw
 		//
 
-		m_pD3DRender->GetContext()->DrawIndexed(VERTEX_INDEX_COUNT, 0, 0);
+		mD3DRender->GetContext()->DrawIndexed(VERTEX_INDEX_COUNT, 0, 0);
 	}
 
 	if (!message.empty()) {
@@ -446,7 +446,7 @@ bool FrameRender::RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBound
 	}
 	RenderDebugText(debugText);
 
-	m_pD3DRender->GetContext()->Flush();
+	mD3DRender->GetContext()->Flush();
 
 	return true;
 }
@@ -454,99 +454,99 @@ bool FrameRender::RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBound
 
 void FrameRender::RenderMessage(const std::string &message)
 {
-	m_SpriteBatch->Begin();
+	mSpriteBatch->Begin();
 
 	std::vector<wchar_t> buf(message.size() + 1);
 	_snwprintf_s(&buf[0], buf.size(), buf.size(), L"%hs", message.c_str());
 
-	DirectX::SimpleMath::Vector2 origin = m_Font->MeasureString(&buf[0]);
+	DirectX::SimpleMath::Vector2 origin = mFont->MeasureString(&buf[0]);
 
-	int eyeWidth = Settings::Instance().m_renderWidth / 2;
-	int x = Settings::Instance().m_renderWidth / 6;
-	int y = Settings::Instance().m_renderHeight / 3;
-	float scale = Settings::Instance().m_renderWidth / (float)3072;
+	int eyeWidth = Settings::Instance().mRenderWidth / 2;
+	int x = Settings::Instance().mRenderWidth / 6;
+	int y = Settings::Instance().mRenderHeight / 3;
+	float scale = Settings::Instance().mRenderWidth / (float)3072;
 
 	RECT rc;
 	rc.left = x - 10;
 	rc.top = y - 10;
-	rc.right = x + origin.x * scale + 10;
-	rc.bottom = y + origin.y * scale + 10;
-	m_SpriteBatch->Draw(m_messageBGResourceView.Get(), rc);
+	rc.right = x + static_cast<int>(origin.x * scale) + 10;
+	rc.bottom = y + static_cast<int>(origin.y * scale) + 10;
+	mSpriteBatch->Draw(mMessageBGResourceView.Get(), rc);
 	rc.left += eyeWidth;
 	rc.right += eyeWidth;
-	m_SpriteBatch->Draw(m_messageBGResourceView.Get(), rc);
+	mSpriteBatch->Draw(mMessageBGResourceView.Get(), rc);
 
 	DirectX::SimpleMath::Vector2 FontPos;
-	FontPos.x = x;
-	FontPos.y = y;
+	FontPos.x = static_cast<float>(x);
+	FontPos.y = static_cast<float>(y);
 
-	m_Font->DrawString(m_SpriteBatch.get(), &buf[0],
+	mFont->DrawString(mSpriteBatch.get(), &buf[0],
 		FontPos, DirectX::Colors::Gray, 0.f, DirectX::XMFLOAT2(), scale);
 
 	FontPos.x += eyeWidth;
 
-	m_Font->DrawString(m_SpriteBatch.get(), &buf[0],
+	mFont->DrawString(mSpriteBatch.get(), &buf[0],
 		FontPos, DirectX::Colors::Gray, 0.f, DirectX::XMFLOAT2(), scale);
 
-	m_SpriteBatch->End();
+	mSpriteBatch->End();
 }
 
 void FrameRender::RenderDebugText(const std::string & debugText)
 {
-	if (!Settings::Instance().m_DebugFrameIndex) {
+	if (!Settings::Instance().mDebugFrameIndex) {
 		return;
 	}
 
-	m_SpriteBatch->Begin();
+	mSpriteBatch->Begin();
 
 	std::vector<wchar_t> buf(debugText.size() + 1);
 	_snwprintf_s(&buf[0], buf.size(), buf.size(), L"%hs", debugText.c_str());
 
-	DirectX::SimpleMath::Vector2 origin = m_Font->MeasureString(&buf[0]);
+	DirectX::SimpleMath::Vector2 origin = mFont->MeasureString(&buf[0]);
 
 	DirectX::SimpleMath::Vector2 FontPos;
 	FontPos.x = 100;
 	FontPos.y = 100;
 
-	m_Font->DrawString(m_SpriteBatch.get(), &buf[0],
+	mFont->DrawString(mSpriteBatch.get(), &buf[0],
 		FontPos, DirectX::Colors::Green, 0.f);
 
-	m_SpriteBatch->End();
+	mSpriteBatch->End();
 }
 
 ComPtr<ID3D11Texture2D> FrameRender::GetTexture()
 {
-	return m_pStagingTexture;
+	return mStagingTexture;
 }
 
 void FrameRender::CreateResourceTexture()
 {
 	std::vector<char> texture;
 	if (!ReadBinaryResource(texture, IDR_RECENTER_TEXTURE)) {
-		Log("Failed to load resource for IDR_RECENTER_TEXTURE.");
+		Log(L"Failed to load resource for IDR_RECENTER_TEXTURE.");
 		return;
 	}
 	CoInitialize(NULL);
 
-	HRESULT hr = DirectX::CreateWICTextureFromMemory(m_pD3DRender->GetDevice(), (uint8_t *)&texture[0], texture.size(),
-		&m_recenterTexture, &m_recenterResourceView);
-	if (!m_recenterTexture) {
-		Log("Failed to create recenter texture. %d %s", hr, GetDxErrorStr(hr));
-	}else if (!m_recenterResourceView) {
-		Log("Failed to create recenter resource view. %d %s", hr, GetDxErrorStr(hr));
+	HRESULT hr = DirectX::CreateWICTextureFromMemory(mD3DRender->GetDevice(), (uint8_t *)&texture[0], texture.size(),
+		&mRecenterTexture, &mRecenterResourceView);
+	if (!mRecenterTexture) {
+		Log(L"Failed to create recenter texture. %d %s", hr, GetErrorStr(hr).c_str());
+	}else if (!mRecenterResourceView) {
+		Log(L"Failed to create recenter resource view. %d %s", hr, GetErrorStr(hr).c_str());
 	}
 
 	if (!ReadBinaryResource(texture, IDR_MESSAGE_BG_TEXTURE)) {
-		Log("Failed to load resource for IDR_MESSAGE_BG_TEXTURE.");
+		Log(L"Failed to load resource for IDR_MESSAGE_BG_TEXTURE.");
 		return;
 	}
 
-	hr = DirectX::CreateWICTextureFromMemory(m_pD3DRender->GetDevice(), (uint8_t *)&texture[0], texture.size(),
-		&m_messageBGTexture, &m_messageBGResourceView);
-	if (!m_messageBGTexture) {
-		Log("Failed to create message_bg texture. %d %s", hr, GetDxErrorStr(hr));
+	hr = DirectX::CreateWICTextureFromMemory(mD3DRender->GetDevice(), (uint8_t *)&texture[0], texture.size(),
+		&mMessageBGTexture, &mMessageBGResourceView);
+	if (!mMessageBGTexture) {
+		Log(L"Failed to create message_bg texture. %d %s", hr, GetErrorStr(hr).c_str());
 	}
-	else if (!m_messageBGResourceView) {
-		Log("Failed to create message_bg resource view. %d %s", hr, GetDxErrorStr(hr));
+	else if (!mMessageBGResourceView) {
+		Log(L"Failed to create message_bg resource view. %d %s", hr, GetErrorStr(hr).c_str());
 	}
 }

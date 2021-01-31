@@ -24,16 +24,22 @@ namespace ALVR
         ControlSocket socket = new ControlSocket();
         ServerConfig config = new ServerConfig();
         ClientList clientList;
+        ClientSocket clientSocket;
+        DeviceDescriptor currentClient;
+        List<DeviceQuery.SoundDevice> soundDevices = new List<DeviceQuery.SoundDevice>();
+        int defaultSoundDeviceIndex = 0;
         bool previousConnectionState = false;
+        bool loadingSettings = false;
 
         class ClientTag
         {
             public bool updated = false;
-            public ClientList.Client client;
+            public DeviceDescriptor client;
         }
 
         public Launcher()
         {
+            clientSocket = new ClientSocket(OnClientMessageStartServer, OnClientConnectionClosed);
             InitializeComponent();
         }
 
@@ -46,10 +52,26 @@ namespace ALVR
             // Get sound devices
             //
 
-            var list = SoundDevice.GetSoundDeviceList();
-            foreach (var device in list)
+            try
             {
-                soundDeviceComboBox.Items.Add(device);
+                soundDevices = DeviceQuery.GetSoundDeviceList();
+                int i = 0;
+                foreach (var device in soundDevices)
+                {
+                    string text = device.name;
+                    if (device.isDefault)
+                    {
+                        defaultSoundDeviceIndex = i;
+                        text = "(Default) " + text;
+                    }
+                    soundDeviceComboBox.Items.Add(text);
+                    i++;
+                }
+            }
+            catch (Exception)
+            {
+                Application.Exit();
+                return;
             }
 
             //
@@ -59,7 +81,7 @@ namespace ALVR
             codecComboBox.Items.AddRange(ServerConfig.supportedCodecs);
             LoadSettings();
 
-            config.Save();
+            config.Save(null);
 
             //
             // Set UI state
@@ -72,9 +94,18 @@ namespace ALVR
             // Driver check
             //
 
-            DriverInstaller.CheckDriverPath();
-            DriverInstaller.RemoveOtherDriverInstallations();
-            CheckDriverInstallStatus();
+            try
+            {
+                DriverInstaller.CheckDriverPath();
+                DriverInstaller.RemoveOtherDriverInstallations();
+                CheckDriverInstallStatus();
+            }
+            catch (Exception e2)
+            {
+                MessageBox.Show("No SteamVR installation found. Please check installation of SteamVR.\r\n" +
+                    e2.Message, "ALVR Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Application.Exit();
+            }
 
             //
             // Open server tab
@@ -88,76 +119,117 @@ namespace ALVR
 
             UpdateServerStatus();
 
-            messageLabel.Text = "Checking server status. Please wait...";
-            ShowMessagePanel();
-
             socket.Update();
 
             timer1.Start();
+
+            clientList.StartListening();
+
+            ShowFindingPanel();
+            UpdateClients();
         }
 
+        /// <summary>
+        /// Load settings and Update UI
+        /// </summary>
         private void LoadSettings()
         {
-            if (Properties.Settings.Default.UpgradeRequired)
+            var c = Properties.Settings.Default;
+            // Disable changed listener on controls.
+            loadingSettings = true;
+
+            try
             {
-                Properties.Settings.Default.Upgrade();
-                Properties.Settings.Default.UpgradeRequired = false;
-                Properties.Settings.Default.Save();
-            }
-
-            resolutionComboBox.DataSource = ServerConfig.supportedResolutions;
-            resolutionComboBox.Text = new ServerConfig.Resolution { width = Properties.Settings.Default.renderWidth }.ToString();
-
-            triggerComboBox.DataSource = ServerConfig.supportedButtons.Clone();
-            trackpadClickComboBox.DataSource = ServerConfig.supportedButtons;
-            triggerComboBox.SelectedIndex = ServerConfig.FindButton(Properties.Settings.Default.controllerTriggerMode);
-            trackpadClickComboBox.SelectedIndex = ServerConfig.FindButton(Properties.Settings.Default.controllerTrackpadClickMode);
-
-            recenterButtonComboBox.DataSource = ServerConfig.supportedRecenterButton;
-            recenterButtonComboBox.SelectedIndex = Properties.Settings.Default.controllerRecenterButton;
-
-            codecComboBox.SelectedIndex = Properties.Settings.Default.codec;
-
-            if (Properties.Settings.Default.soundDevice != "")
-            {
-                for (int i = 0; i < soundDeviceComboBox.Items.Count; i++)
+                var index = Array.FindIndex(ServerConfig.supportedScales, x => x == c.resolutionScale);
+                if (index < 0)
                 {
-                    if ((string)soundDeviceComboBox.Items[i] == Properties.Settings.Default.soundDevice)
+                    index = ServerConfig.DEFAULT_SCALE_INDEX;
+                }
+                resolutionComboBox.SelectedIndex = index;
+                UpdateResolutionLabel();
+
+                triggerComboBox.DataSource = ServerConfig.supportedButtons.Clone();
+                trackpadClickComboBox.DataSource = ServerConfig.supportedButtons;
+                backComboBox.DataSource = ServerConfig.supportedButtons.Clone();
+                triggerComboBox.SelectedIndex = ServerConfig.FindButton(c.controllerTriggerMode);
+                trackpadClickComboBox.SelectedIndex = ServerConfig.FindButton(c.controllerTrackpadClickMode);
+                backComboBox.SelectedIndex = ServerConfig.FindButton(c.controllerBackMode);
+
+                recenterButtonComboBox.DataSource = ServerConfig.supportedRecenterButton;
+                recenterButtonComboBox.SelectedIndex = c.controllerRecenterButton;
+
+                codecComboBox.SelectedIndex = c.codec;
+
+                if (c.soundDevice != "")
+                {
+                    for (int i = 0; i < soundDevices.Count; i++)
                     {
-                        soundDeviceComboBox.SelectedIndex = i;
-                        break;
+                        if (soundDevices[i].id == c.soundDevice)
+                        {
+                            soundDeviceComboBox.SelectedIndex = i;
+                            break;
+                        }
                     }
                 }
-            }
-            if (soundDeviceComboBox.SelectedIndex == -1 && soundDeviceComboBox.Items.Count > 0)
-            {
-                soundDeviceComboBox.SelectedIndex = 0;
-            }
+                if (soundDeviceComboBox.SelectedIndex == -1 && soundDeviceComboBox.Items.Count > 0)
+                {
+                    soundDeviceComboBox.SelectedIndex = 0;
+                }
 
-            clientList = new ClientList(Properties.Settings.Default.autoConnectList);
+                clientList = new ClientList(Properties.Settings.Default.autoConnectList, OnWrongVersionDetected);
+            }
+            finally
+            {
+                loadingSettings = false;
+            }
         }
 
+        /// <summary>
+        /// Get settings from UI and save it.
+        /// </summary>
         private void SaveSettings()
         {
+            var c = Properties.Settings.Default;
             offsetPosXTextBox.Text = Utils.ParseFloat(offsetPosXTextBox.Text).ToString();
             offsetPosYTextBox.Text = Utils.ParseFloat(offsetPosYTextBox.Text).ToString();
             offsetPosZTextBox.Text = Utils.ParseFloat(offsetPosZTextBox.Text).ToString();
             trackingFrameOffsetTextBox.Text = Utils.ParseInt(trackingFrameOffsetTextBox.Text).ToString();
 
-            Properties.Settings.Default.renderWidth = ((ServerConfig.Resolution)resolutionComboBox.SelectedItem).width;
-            Properties.Settings.Default.controllerTriggerMode = ((ServerConfig.ComboBoxCustomItem)triggerComboBox.SelectedItem).value;
-            Properties.Settings.Default.controllerTrackpadClickMode = ((ServerConfig.ComboBoxCustomItem)trackpadClickComboBox.SelectedItem).value;
-            Properties.Settings.Default.controllerRecenterButton = recenterButtonComboBox.SelectedIndex;
-            Properties.Settings.Default.autoConnectList = clientList.Serialize();
-
-            Properties.Settings.Default.codec = codecComboBox.SelectedIndex;
-
-            if (soundDeviceComboBox.SelectedIndex != -1)
+            if (resolutionComboBox.SelectedIndex != -1)
             {
-                Properties.Settings.Default.soundDevice = (string)soundDeviceComboBox.SelectedItem;
+                c.resolutionScale = ServerConfig.supportedScales[resolutionComboBox.SelectedIndex];
+            }
+            else
+            {
+                c.resolutionScale = ServerConfig.supportedScales[ServerConfig.DEFAULT_SCALE_INDEX];
             }
 
-            Properties.Settings.Default.Save();
+            c.controllerTriggerMode = ((ServerConfig.ComboBoxCustomItem)triggerComboBox.SelectedItem).value;
+            c.controllerTrackpadClickMode = ((ServerConfig.ComboBoxCustomItem)trackpadClickComboBox.SelectedItem).value;
+            c.controllerBackMode = ((ServerConfig.ComboBoxCustomItem)backComboBox.SelectedItem).value;
+            c.controllerRecenterButton = recenterButtonComboBox.SelectedIndex;
+            c.autoConnectList = clientList.Serialize();
+
+            c.codec = codecComboBox.SelectedIndex;
+
+            if (soundDevices.Count > 0)
+            {
+                if (!defaultSoundDeviceCheckBox.Checked && soundDeviceComboBox.SelectedIndex != -1)
+                {
+                    c.soundDevice = soundDevices[soundDeviceComboBox.SelectedIndex].id;
+                }
+                else
+                {
+                    c.soundDevice = soundDevices[defaultSoundDeviceIndex].id;
+                }
+            }
+            else
+            {
+                c.enableSound = false;
+                c.soundDevice = "";
+            }
+
+            c.Save();
         }
 
         private void LaunchServer()
@@ -174,14 +246,21 @@ namespace ALVR
                 return;
             }
 
-            Process.Start("vrmonitor:");
+            if (Properties.Settings.Default.onlySteamVR)
+            {
+                Utils.LaunchOnlySteamVR();
+            }
+            else
+            {
+                Utils.LaunchSteam();
+            }
         }
 
         private bool SaveConfig()
         {
             SaveSettings();
 
-            if (!config.Save())
+            if (!config.Save(currentClient))
             {
                 Application.Exit();
                 return false;
@@ -217,6 +296,7 @@ namespace ALVR
             findingPanel.Hide();
             messagePanel.Hide();
         }
+
         private void UpdateServerStatus()
         {
             if (socket.status == ControlSocket.ServerStatus.CONNECTED)
@@ -225,20 +305,47 @@ namespace ALVR
                 metroLabel3.BackColor = Color.LimeGreen;
                 metroLabel3.ForeColor = Color.White;
 
+                closeServerButton.Text = "Close server";
+                closeServerButton.Enabled = true;
                 metroProgressSpinner1.Hide();
+                startServerButton.Hide();
+            }
+            else if (socket.status == ControlSocket.ServerStatus.SHUTTINGDOWN)
+            {
+                metroLabel3.Text = "Shutting down...";
+                metroLabel3.BackColor = Color.LimeGreen;
+                metroLabel3.ForeColor = Color.White;
+
+                closeServerButton.Text = "Close server";
+                closeServerButton.Enabled = false;
+                metroProgressSpinner1.Show();
                 startServerButton.Hide();
             }
             else
             {
-                metroLabel3.Text = "Server is down";
-                metroLabel3.BackColor = Color.Gray;
-                metroLabel3.ForeColor = Color.White;
+                if (currentClient != null)
+                {
+                    metroLabel3.Text = "Server is down";
+                    metroLabel3.BackColor = Color.Gray;
+                    metroLabel3.ForeColor = Color.White;
 
-                messageLabel.Text = "Server is not runnning.\r\nPress \"Start Server\"";
-                ShowMessagePanel();
-
-                metroProgressSpinner1.Show();
-                startServerButton.Show();
+                    closeServerButton.Text = "Disconnect";
+                    closeServerButton.Enabled = true;
+                    statDataGridView.Rows.Clear();
+                    metroProgressSpinner1.Show();
+                    startServerButton.Show();
+                }
+                else
+                {
+                    metroLabel3.Text = "";
+                    metroLabel3.BackColor = Color.White;
+                    metroLabel3.ForeColor = Color.White;
+                    closeServerButton.Text = "Disconnect";
+                    closeServerButton.Enabled = false;
+                    statDataGridView.Rows.Clear();
+                    metroProgressSpinner1.Hide();
+                    startServerButton.Hide();
+                }
             }
         }
 
@@ -253,14 +360,17 @@ namespace ALVR
                 {
                     continue;
                 }
-                if (statDataGridView.Rows.Count <= i){
-                    statDataGridView.Rows.Add(new string[] {  });
+                if (statDataGridView.Rows.Count <= i)
+                {
+                    statDataGridView.Rows.Add(new string[] { });
                 }
                 statDataGridView.Rows[i].Cells[0].Value = elem[0];
                 statDataGridView.Rows[i].Cells[1].Value = elem[1];
 
                 i++;
             }
+            str = await socket.SendCommand("GetConfig");
+            logText.Text = str.Replace("\n", "\r\n");
         }
 
         private Dictionary<string, string> ParsePacket(string str)
@@ -273,47 +383,20 @@ namespace ALVR
                 {
                     continue;
                 }
-                dict.Add(elem[0], elem[1]);
+                try
+                {
+                    dict.Add(elem[0], elem[1]);
+                }
+                catch (ArgumentException)
+                {
+                }
             }
             return dict;
         }
 
-        async private void UpdateClients()
+        private void UpdateClients()
         {
-            if (!socket.Connected)
-            {
-                UpdateConnectionState(false);
-                return;
-            }
-            string str = await socket.SendCommand("GetConfig");
-            if (str == "")
-            {
-                UpdateConnectionState(false);
-                return;
-            }
-            logText.Text = str.Replace("\n", "\r\n");
-
-            var configs = ParsePacket(str);
-            if (configs["Connected"] == "1")
-            {
-                // Connected
-                UpdateConnectionState(true, configs["ClientName"] + " " + configs["Client"] + " " + configs["RefreshRate"]);
-
-                connectedLabel.Text = "Connected!\r\n\r\n" + configs["ClientName"] + "\r\n"
-                    + configs["Client"] + "\r\n" + configs["RefreshRate"] + " FPS";
-
-                autoConnectCheckBox.CheckedChanged -= autoConnectCheckBox_CheckedChanged;
-                autoConnectCheckBox.Checked = clientList.InAutoConnectList(configs["ClientName"], configs["Client"]);
-                autoConnectCheckBox.CheckedChanged += autoConnectCheckBox_CheckedChanged;
-                ShowConnectedPanel();
-
-                UpdateClientStatistics();
-                return;
-            }
-            UpdateConnectionState(false);
-            ShowFindingPanel();
-
-            var clients = clientList.ParseRequests(await socket.SendCommand("GetRequests"));
+            clientList.Refresh();
 
             foreach (var row in dataGridView1.Rows.Cast<DataGridViewRow>())
             {
@@ -321,7 +404,7 @@ namespace ALVR
                 ((ClientTag)row.Tag).updated = false;
             }
 
-            foreach (var client in clients)
+            foreach (var client in clientList)
             {
                 DataGridViewRow found = null;
                 foreach (var row in dataGridView1.Rows.Cast<DataGridViewRow>())
@@ -356,16 +439,16 @@ namespace ALVR
                 found.Cells[2].Style.ForeColor = color;
                 found.Cells[2].Style.SelectionForeColor = color;
 
-                found.Cells[0].Value = client.Name;
-                found.Cells[1].Value = client.Address;
-                found.Cells[2].Value = client.Online ? (client.RefreshRate + " FPS") : "Offline";
+                found.Cells[0].Value = client.DeviceName;
+                found.Cells[1].Value = client.ClientAddr.ToString();
+                found.Cells[2].Value = client.Online ? (client.RefreshRates[0] + " FPS") : "Offline";
 
                 string buttonLabel = "Connect";
                 if (!client.Online)
                 {
                     buttonLabel = "Remove";
                 }
-                else if (!client.VersionOk)
+                else if (client.Version != HelloListener.ALVR_PROTOCOL_VERSION)
                 {
                     buttonLabel = "Wrong version";
                 }
@@ -389,8 +472,36 @@ namespace ALVR
             var autoConnect = clientList.GetAutoConnectableClient();
             if (autoConnect != null)
             {
-                await clientList.Connect(socket, autoConnect);
+                Connect(autoConnect);
             }
+        }
+
+        private void Connect(DeviceDescriptor client)
+        {
+            if (currentClient != null)
+            {
+                // Ignore when connected.
+                return;
+            }
+            currentClient = client;
+
+            var task = clientSocket.Connect(currentClient.ClientHost, currentClient.ClientPort);
+
+            connectedLabel.Text = "Connected!\r\n\r\n" + currentClient.DeviceName + "\r\n"
+                + currentClient.ClientAddr.ToString() + "\r\n"
+                + currentClient.RefreshRates[0] + "Hz " + currentClient.DefaultWidth + "x" + currentClient.DefaultHeight;
+
+            autoConnectCheckBox.CheckedChanged -= autoConnectCheckBox_CheckedChanged;
+            autoConnectCheckBox.Checked = clientList.InAutoConnectList(currentClient);
+            autoConnectCheckBox.CheckedChanged += autoConnectCheckBox_CheckedChanged;
+
+            UpdateResolutionLabel();
+            ShowConnectedPanel();
+            UpdateServerStatus();
+
+            // To ensure the driver can detect current config (MemoryMappedFile) on startup,
+            // when SteamVR is launched by external.
+            SaveConfig();
         }
 
         private void CheckDriverInstallStatus()
@@ -426,7 +537,8 @@ namespace ALVR
             {
                 previousConnectionState = connected;
                 RunConnectCommand(args);
-            }else if (previousConnectionState && !connected)
+            }
+            else if (previousConnectionState && !connected)
             {
                 previousConnectionState = connected;
                 RunDisconnectCommand();
@@ -455,7 +567,19 @@ namespace ALVR
 
         private void UpdateSoundCheckboxState()
         {
-            soundDeviceComboBox.Enabled = soundCheckBox.Checked;
+            if (soundDevices.Count == 0)
+            {
+                soundCheckBox.Hide();
+                defaultSoundDeviceCheckBox.Hide();
+                soundDeviceComboBox.Hide();
+                noSoundDeviceLabel.Show();
+            }
+            else
+            {
+                defaultSoundDeviceCheckBox.Enabled = soundCheckBox.Checked;
+                soundDeviceComboBox.Enabled = !defaultSoundDeviceCheckBox.Checked && soundCheckBox.Checked;
+            }
+            SaveSettings();
         }
 
         //
@@ -467,14 +591,15 @@ namespace ALVR
             socket.Update();
             UpdateClients();
             UpdateServerStatus();
+            UpdateClientStatistics();
         }
 
-        async private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (dataGridView1.Columns[e.ColumnIndex].Name == "Button")
             {
                 var tag = ((ClientTag)dataGridView1.Rows[e.RowIndex].Tag);
-                
+
                 if (!tag.client.Online)
                 {
                     // Remove from auto connect list.
@@ -490,13 +615,19 @@ namespace ALVR
                 }
                 // Reenable auto connect.
                 clientList.EnableAutoConnect = true;
-                await clientList.Connect(socket, tag.client);
+
+                Connect(tag.client);
             }
         }
 
-        async private void metroButton3_Click(object sender, EventArgs e)
+        async private void captureLayerDDSButton_Click(object sender, EventArgs e)
         {
-            await socket.SendCommand("Capture");
+            await socket.SendCommand("SetConfig captureLayerDDS 1");
+        }
+
+        async private void captureComposedDDSButton_Click(object sender, EventArgs e)
+        {
+            await socket.SendCommand("SetConfig captureComposedDDS 1");
         }
 
         async private void sendOffsetPos_Click(object sender, EventArgs e)
@@ -509,14 +640,14 @@ namespace ALVR
             bitrateLabel.Text = bitrateTrackBar.Value + "Mbps";
         }
 
-        async private void button2_Click(object sender, EventArgs e)
+        async private void sendClientDebugFlagsButton_Click(object sender, EventArgs e)
         {
-            await socket.SendCommand("EnableTestMode " + metroTextBox1.Text);
+            await socket.SendCommand("SetDebugFlags " + clientDebugFlagsTextBox.Text);
         }
 
         async private void button3_Click(object sender, EventArgs e)
         {
-            await socket.SendCommand("EnableDriverTestMode " + metroTextBox2.Text);
+            await socket.SendCommand("EnableDriverTestMode " + driverTestModeTextBox.Text);
         }
 
         async private void metroButton4_Click(object sender, EventArgs e)
@@ -577,17 +708,27 @@ namespace ALVR
             //await socket.SendCommand("SetConfig controllerTrackpadTouchMode " + value);
         }
 
+        async private void backClickComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int value = ((ServerConfig.ComboBoxCustomItem)backComboBox.SelectedItem).value;
+            await socket.SendCommand("SetConfig controllerBackMode " + value);
+        }
+
         async private void recenterButtonComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             int value = recenterButtonComboBox.SelectedIndex;
-            await socket.SendCommand("SetConfig controllerRecenterButton " + value);
+            await socket.SendCommand("SetConfig controllerRecenterButton " + ServerConfig.recenterButtonIndex[value]);
         }
 
-        async private void disconnectButton_Click(object sender, EventArgs e)
+        private void disconnectButton_Click(object sender, EventArgs e)
         {
             // Disable auto connect to avoid immediate auto reconnection.
             clientList.EnableAutoConnect = false;
-            await socket.SendCommand("Disconnect");
+            Task t = clientSocket.Disconnect();
+            currentClient = null;
+            ShowFindingPanel();
+            socket.Shutdown();
+            UpdateServerStatus();
         }
 
         async private void packetlossButton_Click(object sender, EventArgs e)
@@ -612,24 +753,13 @@ namespace ALVR
 
         async private void autoConnectCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            string str = await socket.SendCommand("GetConfig");
-            if (str == "")
-            {
-                return;
-            }
-
-            var configs = ParsePacket(str);
-            if (!configs.ContainsKey("ClientName") || !configs.ContainsKey("Client"))
-            {
-                // Not connected?
-                return;
-            }
             if (autoConnectCheckBox.Checked)
             {
-                clientList.AddAutoConnect(configs["ClientName"], configs["Client"]);
-            } else
+                clientList.AddAutoConnect(currentClient);
+            }
+            else
             {
-                clientList.RemoveAutoConnect(configs["ClientName"], configs["Client"]);
+                clientList.RemoveAutoConnect(currentClient);
             }
             SaveSettings();
         }
@@ -666,6 +796,62 @@ namespace ALVR
         {
             trackingFrameOffsetTextBox.Text = Utils.ParseInt(trackingFrameOffsetTextBox.Text).ToString();
             await socket.SendCommand("SetConfig trackingFrameOffset " + trackingFrameOffsetTextBox.Text);
+        }
+
+        async private void suppressFrameDropCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            await socket.SendCommand("SetClientConfig frameQueueSize " + config.GetFrameQueueSize(suppressFrameDropCheckBox.Checked));
+        }
+
+        private void defaultSoundDeviceCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            UpdateSoundCheckboxState();
+        }
+
+        private void resolutionComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (loadingSettings)
+            {
+                return;
+            }
+            Properties.Settings.Default.resolutionScale = ServerConfig.supportedScales[resolutionComboBox.SelectedIndex];
+            UpdateResolutionLabel();
+            SaveSettings();
+        }
+
+        private void UpdateResolutionLabel()
+        {
+            int width = ServerConfig.DEFAULT_WIDTH;
+            int height = ServerConfig.DEFAULT_HEIGHT;
+            if (currentClient != null)
+            {
+                width = currentClient.DefaultWidth;
+                height = currentClient.DefaultHeight;
+            }
+            resolutionLabel.Text = (width * ServerConfig.supportedScales[resolutionComboBox.SelectedIndex] / 100)
+                + "x" + (height * ServerConfig.supportedScales[resolutionComboBox.SelectedIndex] / 100);
+        }
+
+        // Callbacks for ClientSocket
+
+        private void OnClientMessageStartServer()
+        {
+            LaunchServer();
+        }
+
+        private void OnClientConnectionClosed()
+        {
+            currentClient = null;
+
+            clientList.Clear();
+
+            ShowFindingPanel();
+            UpdateServerStatus();
+        }
+
+        private void OnWrongVersionDetected()
+        {
+            wrongVersionLabel.Visible = true;
         }
     }
 }

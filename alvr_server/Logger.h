@@ -2,28 +2,21 @@
 
 #include <iostream>
 #include <fstream>
+#include <exception.h>
 
 void InitCrashHandler();
 
 void OpenLog(const char *fileName);
+void CloseLog();
 
+void Log(const wchar_t *pFormat, ...);
 void Log(const char *pFormat, ...);
-
+void LogException(const wchar_t *format, ...);
+void LogException(const char *format, ...);
+void FatalLog(const wchar_t *format, ...);
 void FatalLog(const char *format, ...);
 
-class Exception : public std::exception {
-public:
-	Exception(std::string what)
-		: m_what(what) {
-	}
-
-	virtual const char *what() {
-		return m_what.c_str();
-	}
-private:
-	const std::string m_what;
-};
-
+Exception MakeException(const wchar_t *format, ...);
 Exception MakeException(const char *format, ...);
 
 void FlushLog();

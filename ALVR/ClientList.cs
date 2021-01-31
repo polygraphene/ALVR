@@ -1,5 +1,6 @@
 ﻿using Codeplex.Data;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,47 +8,43 @@ using System.Threading.Tasks;
 
 namespace ALVR
 {
-    class ClientList
+    class ClientList : IEnumerable<DeviceDescriptor>
     {
-        public class Client : IEquatable<Client>
-        {
-            public string Name { get; set; }
-            public string Address { get; set; }
-            public bool VersionOk { get; set; }
-            public int RefreshRate { get; set; }
-            public bool Online { get; set; }
-
-            public Client() { }
-            
-            public Client(string clientName, string address, bool versionOk, int refreshRate = 0, bool online = false)
-            {
-                Name = clientName;
-                Address = address;
-                VersionOk = versionOk;
-                RefreshRate = refreshRate;
-                Online = online;
-            }
-
-            public bool Equals(Client other)
-            {
-                if (other == null)
-                    return false;
-
-                return Name == other.Name && Address == other.Address;
-            }
-        }
-
-        List<Client> autoConnectList = new List<Client>();
-        List<Client> clients = new List<Client>();
+        HelloListener helloListener;
+        List<DeviceDescriptor> autoConnectList = new List<DeviceDescriptor>();
+        List<DeviceDescriptor> clients = new List<DeviceDescriptor>();
         public bool EnableAutoConnect { get; set; } = true;
 
-        public ClientList(string serialized)
+        public ClientList(string serialized, Action detectedWrongVersionCallback)
         {
+            helloListener = new HelloListener(NewClientCallback, detectedWrongVersionCallback);
             try
             {
-                autoConnectList.AddRange((Client[])DynamicJson.Parse(serialized));
+                var json = DynamicJson.Parse(serialized);
+                foreach (var d in json) {
+                    var newobj = new DeviceDescriptor();
+                    if (d.DeviceName == null)
+                    {
+                        continue;
+                    }
+                    newobj.DeviceName = d.DeviceName;
+                    newobj.ClientHost = d.ClientHost;
+                    newobj.ClientPort = (int)d.ClientPort;
+                    newobj.Version = (UInt32)d.Version;
+                    newobj.RefreshRates = (byte[])d.RefreshRates;
+                    newobj.RenderWidth = (UInt16)d.RenderWidth;
+                    newobj.RenderHeight = (UInt16)d.RenderHeight;
+                    newobj.EyeFov = d.EyeFov;
+                    newobj.DeviceType = (byte)d.DeviceType;
+                    newobj.DeviceSubType = (byte)d.DeviceSubType;
+                    newobj.DeviceCapabilityFlags = (UInt32)d.DeviceCapabilityFlags;
+                    newobj.ControllerCapabilityFlags = (UInt32)d.ControllerCapabilityFlags;
+                    newobj.Online = false;
+                    autoConnectList.Add(newobj);
+                    clients.Add(newobj);
+                }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 autoConnectList.Clear();
             }
@@ -58,52 +55,25 @@ namespace ALVR
             return DynamicJson.Serialize(autoConnectList);
         }
 
-        public List<Client> ParseRequests(string requests)
+        public void AddAutoConnect(DeviceDescriptor descriptor)
         {
-            clients.Clear();
-
-            foreach (var s in requests.Split('\n'))
+            if (!autoConnectList.Contains(descriptor))
             {
-                var elem = s.Split(" ".ToCharArray(), 4);
-                if (elem.Length != 4)
-                {
-                    continue;
-                }
-                var client = new Client(elem[3], elem[0], elem[1] == "1", int.Parse(elem[2]), true);
-
-                if (clients.Contains(client))
-                {
-                    // Update status.
-                    clients.Remove(client);
-                }
-                clients.Add(client);
-            }
-            return clients.Concat(autoConnectList.Where(x => !clients.Contains(x))).ToList();
-        }
-
-        public void AddAutoConnect(string ClientName, string Address)
-        {
-            var client = new Client(ClientName, Address, true);
-            if (!autoConnectList.Contains(client))
-            {
-                autoConnectList.Add(client);
+                autoConnectList.Add(descriptor);
             }
         }
 
-        public void RemoveAutoConnect(string ClientName, string Address)
+        public void RemoveAutoConnect(DeviceDescriptor descriptor)
         {
-            var client = new Client(ClientName, Address, true);
-            autoConnectList.Remove(client);
+            autoConnectList.Remove(descriptor);
         }
 
-        public void RemoveAutoConnect(Client client)
+        public DeviceDescriptor GetAutoConnectableClient()
         {
-            autoConnectList.Remove(client);
-        }
-
-        public Client GetAutoConnectableClient()
-        {
-            var list = autoConnectList.Where(x => clients.Contains(x));
+            var list = autoConnectList.Where(x =>
+            {
+                return clients.Find(y => x.Equals(y) && y.VersionOk && y.Online) != null;
+            });
             if (list.Count() != 0)
             {
                 if (!EnableAutoConnect)
@@ -116,15 +86,78 @@ namespace ALVR
             return null;
         }
 
-        async public Task<bool> Connect(ControlSocket socket, Client client)
+        public bool InAutoConnectList(DeviceDescriptor client)
         {
-            var ret = await socket.SendCommand("Connect " + client.Address);
-            return ret == "OK";
+            return autoConnectList.Contains(client);
         }
 
-        public bool InAutoConnectList(string ClientName, string Address)
+        public void StartListening()
         {
-            return autoConnectList.Contains(new Client(ClientName, Address, true));
+            helloListener.Start();
+        }
+
+        private void NewClientCallback(DeviceDescriptor descriptor)
+        {
+            if (clients.Contains(descriptor))
+            {
+                var found = clients.FindIndex((d) => d.Equals(descriptor));
+                clients[found] = descriptor;
+                found = autoConnectList.FindIndex((d) => d.Equals(descriptor));
+                if (found != -1)
+                {
+                    autoConnectList[found] = descriptor;
+                }
+            }
+            else
+            {
+                clients.Add(descriptor);
+            }
+        }
+
+        /// <summary>
+        /// Remove aged client entry.
+        /// </summary>
+        public void Refresh()
+        {
+            var current = DateTime.Now.Ticks;
+            for (int i = 0; i < clients.Count; i++)
+            {
+                if (TimeSpan.FromTicks(current - clients[i].LastUpdate).TotalSeconds > 5)
+                {
+                    if (!InAutoConnectList(clients[i]))
+                    {
+                        clients.RemoveAt(i);
+                        i--;
+                    }
+                    else
+                    {
+                        clients[i].Online = false;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Clear clients to prevent immediate re-connection after disconnect.
+        /// </summary>
+        public void Clear()
+        {
+            clients.Clear();
+            foreach (var c in autoConnectList)
+            {
+                c.Online = false;
+                clients.Add(c);
+            }
+        }
+
+        public IEnumerator<DeviceDescriptor> GetEnumerator()
+        {
+            return ((IEnumerable<DeviceDescriptor>)clients).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable<DeviceDescriptor>)clients).GetEnumerator();
         }
     }
 }

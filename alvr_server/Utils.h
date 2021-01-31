@@ -1,14 +1,14 @@
 #pragma once
 
+#pragma warning(disable:4005)
 #include <WinSock2.h>
+#pragma warning(default:4005)
 #include <WinInet.h>
 #include <WS2tcpip.h>
 #include <Windows.h>
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include <locale>
-#include <codecvt>
 #include <d3d11.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -17,7 +17,10 @@
 #include "openvr_driver.h"
 #include "packet_types.h"
 
-extern HINSTANCE g_hInstance;
+extern HINSTANCE gInstance;
+
+const uint64_t US_TO_MS = 1000;
+extern uint64_t gPerformanceCounterFrequency;
 
 // Get elapsed time in us from Unix Epoch
 inline uint64_t GetTimestampUs() {
@@ -30,6 +33,20 @@ inline uint64_t GetTimestampUs() {
 	Current /= 10;
 
 	return Current;
+}
+
+// Get performance counter in us
+inline uint64_t GetCounterUs() {
+	if (gPerformanceCounterFrequency == 0) {
+		LARGE_INTEGER freq;
+		QueryPerformanceFrequency(&freq);
+		gPerformanceCounterFrequency = freq.QuadPart;
+	}
+
+	LARGE_INTEGER counter;
+	QueryPerformanceCounter(&counter);
+
+	return counter.QuadPart * 1000000LLU / gPerformanceCounterFrequency;
 }
 
 inline std::string DumpMatrix(const float *m) {
@@ -46,23 +63,21 @@ inline std::string DumpMatrix(const float *m) {
 	return std::string(buf);
 }
 
-inline std::string GetDxErrorStr(HRESULT hr) {
-	char *s = NULL;
-	std::string ret;
-	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+inline std::wstring GetErrorStr(HRESULT hr) {
+	wchar_t *s = NULL;
+	std::wstring ret;
+	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, hr,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPSTR)&s, 0, NULL);
+		(LPWSTR)&s, 0, NULL);
 	ret = s;
 	LocalFree(s);
 
-	if (ret.size() >= 1) {
-		if (ret[ret.size() - 1] == '\n') {
-			ret.erase(ret.size() - 1, 1);
-		}
-		if (ret[ret.size() - 1] == '\r') {
-			ret.erase(ret.size() - 1, 1);
-		}
+	if (ret.size() >= 1 && ret[ret.size() - 1] == L'\n') {
+		ret.erase(ret.size() - 1, 1);
+	}
+	if (ret.size() >= 1 && ret[ret.size() - 1] == L'\r') {
+		ret.erase(ret.size() - 1, 1);
 	}
 	return ret;
 }
@@ -82,16 +97,16 @@ inline std::string AddrPortToStr(const sockaddr_in *addr) {
 }
 
 inline bool ReadBinaryResource(std::vector<char> &buffer, int resource) {
-	HRSRC hResource = FindResource(g_hInstance, MAKEINTRESOURCE(resource), RT_RCDATA);
+	HRSRC hResource = FindResource(gInstance, MAKEINTRESOURCE(resource), RT_RCDATA);
 	if (hResource == NULL) {
 		return false;
 	}
-	HGLOBAL hResData = LoadResource(g_hInstance, hResource);
+	HGLOBAL hResData = LoadResource(gInstance, hResource);
 	if (hResData == NULL) {
 		return false;
 	}
 	void *data = LockResource(hResData);
-	int dataSize = SizeofResource(g_hInstance, hResource);
+	int dataSize = SizeofResource(gInstance, hResource);
 
 	buffer.resize(dataSize);
 	memcpy(&buffer[0], data, dataSize);
@@ -289,18 +304,18 @@ inline bool ShouldUseNV12Texture() {
 
 typedef void (WINAPI *RtlGetVersion_FUNC)(OSVERSIONINFOEXW*);
 
-inline std::string GetWindowsOSVersion() {
+inline std::wstring GetWindowsOSVersion() {
 	HMODULE hModule;
 	OSVERSIONINFOEXW ver;
 
-	hModule = LoadLibrary(TEXT("ntdll.dll"));
+	hModule = LoadLibraryW(L"ntdll.dll");
 	if (hModule == NULL) {
-		return "Unknown";
+		return L"Unknown";
 	}
 	RtlGetVersion_FUNC RtlGetVersion = (RtlGetVersion_FUNC)GetProcAddress(hModule, "RtlGetVersion");
 	if (RtlGetVersion == NULL) {
 		FreeLibrary(hModule);
-		return "Unknown";
+		return L"Unknown";
 	}
 	memset(&ver, 0, sizeof(ver));
 	ver.dwOSVersionInfoSize = sizeof(ver);
@@ -308,19 +323,8 @@ inline std::string GetWindowsOSVersion() {
 
 	FreeLibrary(hModule);
 
-	char buf[1000];
-	snprintf(buf, sizeof(buf), "MajorVersion=%d MinorVersion=%d Build=%d",
+	wchar_t buf[1000];
+	_snwprintf_s(buf, sizeof(buf) / sizeof(buf[0]), L"MajorVersion=%d MinorVersion=%d Build=%d",
 		ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber);
 	return buf;
-}
-
-inline std::wstring ToWstring(const std::string &src) {
-	// TODO: src is really UTF-8?
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	return converter.from_bytes(src);
-}
-
-inline std::string ToUTF8(const std::wstring &src) {
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	return converter.to_bytes(src);
 }

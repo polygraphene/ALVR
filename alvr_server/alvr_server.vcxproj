@@ -1,0 +1,266 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{6FB51D67-327E-4A18-BC74-7AA6AAB4C827}</ProjectGuid>
+    <RootNamespace>alvr_server</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <ProjectName>alvr_server</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>driver_alvr_server</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>driver_alvr_server</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>../shared;../openvr/headers;include;$(SolutionDir)include;..\libswresample\include;$(SolutionDir)ALVR-common</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WINDLL;NOMINMAX;_WINSOCKAPI_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>avrt.lib;ole32.lib;winmm.lib;ws2_32.lib;$(SolutionDir)$(Platform)\$(Configuration)\CUDA.lib;$(SolutionDir)\libswresample\lib\swresample.lib;$(SolutionDir)\libswresample\lib\avutil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>nvcuda.dll</DelayLoadDLLs>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>../shared;../openvr/headers;include;$(SolutionDir)include;..\libswresample\include;$(SolutionDir)ALVR-common</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WINDLL;NOMINMAX;_WINSOCKAPI_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>avrt.lib;ole32.lib;winmm.lib;ws2_32.lib;$(SolutionDir)$(Platform)\$(Configuration)\CUDA.lib;$(SolutionDir)\libswresample\lib\swresample.lib;$(SolutionDir)\libswresample\lib\avutil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>nvcuda.dll</DelayLoadDLLs>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\ALVR-common\common-utils.cpp" />
+    <ClCompile Include="..\ALVR-common\exception.cpp" />
+    <ClCompile Include="..\ALVR-common\reedsolomon\rs.c" />
+    <ClCompile Include="amf\common\AMFFactory.cpp" />
+    <ClCompile Include="amf\common\AMFSTL.cpp" />
+    <ClCompile Include="amf\common\Thread.cpp" />
+    <ClCompile Include="amf\common\Windows\ThreadWindows.cpp" />
+    <ClCompile Include="AudioCapture.cpp" />
+    <ClCompile Include="Bitrate.cpp" />
+    <ClCompile Include="ControlSocket.cpp" />
+    <ClCompile Include="alvr_server.cpp" />
+    <ClCompile Include="DeviceQuery.cpp" />
+    <ClCompile Include="OpenVRController.cpp" />
+    <ClCompile Include="OpenVRFakeTrackingReference.cpp" />
+    <ClCompile Include="FrameEncoder.cpp" />
+    <ClCompile Include="FrameRender.cpp" />
+    <ClCompile Include="FreePIE.cpp" />
+    <ClCompile Include="IDRScheduler.cpp" />
+    <ClCompile Include="Listener.cpp" />
+    <ClCompile Include="Logger.cpp" />
+    <ClCompile Include="nvenc\NvEncoder.cpp" />
+    <ClCompile Include="nvenc\NvEncoderD3D11.cpp" />
+    <ClCompile Include="nvenc\NvTextureEncoderD3D11.cpp" />
+    <ClCompile Include="nvenc\NvTextureEncoder.cpp" />
+    <ClCompile Include="openvr-utils\d3drender.cpp" />
+    <ClCompile Include="openvr-utils\ipctools.cpp" />
+    <ClCompile Include="openvr-utils\systemtime.cpp" />
+    <ClCompile Include="openvr-utils\threadtools.cpp" />
+    <ClCompile Include="OpenVRDirectModeComponent.cpp" />
+    <ClCompile Include="OpenVRDisplayComponent.cpp" />
+    <ClCompile Include="OpenVRHmd.cpp" />
+    <ClCompile Include="PacketBuffer.cpp" />
+    <ClCompile Include="Poller.cpp" />
+    <ClCompile Include="RecenterManager.cpp" />
+    <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="ThrottlingBuffer.cpp" />
+    <ClCompile Include="UdpSocket.cpp" />
+    <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="VideoEncoder.cpp" />
+    <ClCompile Include="VideoEncoderNVENC.cpp" />
+    <ClCompile Include="VideoEncoderVCE.cpp" />
+    <ClCompile Include="VSyncThread.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\ALVR-common\exception.h" />
+    <ClInclude Include="..\ALVR-common\packet_types.h" />
+    <ClInclude Include="..\ALVR-common\reedsolomon\rs.h" />
+    <ClInclude Include="amf\common\AMFFactory.h" />
+    <ClInclude Include="amf\common\AMFSTL.h" />
+    <ClInclude Include="amf\common\Thread.h" />
+    <ClInclude Include="amf\include\components\Component.h" />
+    <ClInclude Include="amf\include\components\ComponentCaps.h" />
+    <ClInclude Include="amf\include\components\FFMPEGAudioConverter.h" />
+    <ClInclude Include="amf\include\components\FFMPEGAudioDecoder.h" />
+    <ClInclude Include="amf\include\components\FFMPEGAudioEncoder.h" />
+    <ClInclude Include="amf\include\components\FFMPEGComponents.h" />
+    <ClInclude Include="amf\include\components\FFMPEGFileDemuxer.h" />
+    <ClInclude Include="amf\include\components\FFMPEGFileMuxer.h" />
+    <ClInclude Include="amf\include\components\MediaSource.h" />
+    <ClInclude Include="amf\include\components\VideoConverter.h" />
+    <ClInclude Include="amf\include\components\VideoDecoderUVD.h" />
+    <ClInclude Include="amf\include\components\VideoEncoderHEVC.h" />
+    <ClInclude Include="amf\include\components\VideoEncoderVCE.h" />
+    <ClInclude Include="amf\include\core\AudioBuffer.h" />
+    <ClInclude Include="amf\include\core\Buffer.h" />
+    <ClInclude Include="amf\include\core\Compute.h" />
+    <ClInclude Include="amf\include\core\ComputeFactory.h" />
+    <ClInclude Include="amf\include\core\Context.h" />
+    <ClInclude Include="amf\include\core\Data.h" />
+    <ClInclude Include="amf\include\core\Debug.h" />
+    <ClInclude Include="amf\include\core\Factory.h" />
+    <ClInclude Include="amf\include\core\Interface.h" />
+    <ClInclude Include="amf\include\core\Plane.h" />
+    <ClInclude Include="amf\include\core\Platform.h" />
+    <ClInclude Include="amf\include\core\PropertyStorage.h" />
+    <ClInclude Include="amf\include\core\PropertyStorageEx.h" />
+    <ClInclude Include="amf\include\core\Result.h" />
+    <ClInclude Include="amf\include\core\Surface.h" />
+    <ClInclude Include="amf\include\core\Trace.h" />
+    <ClInclude Include="amf\include\core\Variant.h" />
+    <ClInclude Include="amf\include\core\Version.h" />
+    <ClInclude Include="AudioCapture.h" />
+    <ClInclude Include="Bitrate.h" />
+    <ClInclude Include="common-utils.h" />
+    <ClInclude Include="ControlSocket.h" />
+    <ClInclude Include="DeviceQuery.h" />
+    <ClInclude Include="FrameEncoder.h" />
+    <ClInclude Include="FrameRender.h" />
+    <ClInclude Include="FreePIE.h" />
+    <ClInclude Include="IDRScheduler.h" />
+    <ClInclude Include="nvenc\NvTextureEncoder.h" />
+    <ClInclude Include="Listener.h" />
+    <ClInclude Include="Logger.h" />
+    <ClInclude Include="nvenc\NvCodecUtils.h" />
+    <ClInclude Include="nvenc\nvEncodeAPI.h" />
+    <ClInclude Include="nvenc\NvEncoder.h" />
+    <ClInclude Include="nvenc\nvencoderclioptions.h" />
+    <ClInclude Include="nvenc\NvEncoderD3D11.h" />
+    <ClInclude Include="nvenc\NvTextureEncoderD3D11.h" />
+    <ClInclude Include="openvr-utils\d3drender.h" />
+    <ClInclude Include="openvr-utils\ipctools.h" />
+    <ClInclude Include="openvr-utils\sharedstate.h" />
+    <ClInclude Include="openvr-utils\systemtime.h" />
+    <ClInclude Include="openvr-utils\threadtools.h" />
+    <ClInclude Include="OpenVRDirectModeComponent.h" />
+    <ClInclude Include="OpenVRDisplayComponent.h" />
+    <ClInclude Include="OpenVRHmd.h" />
+    <ClInclude Include="PacketBuffer.h" />
+    <ClInclude Include="Poller.h" />
+    <ClInclude Include="RecenterManager.h" />
+    <ClInclude Include="OpenVRController.h" />
+    <ClInclude Include="ResampleUtils.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="Settings.h" />
+    <ClInclude Include="Statistics.h" />
+    <ClInclude Include="ThrottlingBuffer.h" />
+    <ClInclude Include="OpenVRFakeTrackingReference.h" />
+    <ClInclude Include="UdpSocket.h" />
+    <ClInclude Include="Utils.h" />
+    <ClInclude Include="VideoEncoder.h" />
+    <ClInclude Include="VideoEncoderNVENC.h" />
+    <ClInclude Include="VideoEncoderVCE.h" />
+    <ClInclude Include="VSyncThread.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="shader\FrameRender.fx">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="shader\FrameRenderPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">PS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+    <FxCompile Include="shader\FrameRenderVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\directxtk_desktop_2015.2018.4.23.1\build\native\directxtk_desktop_2015.targets" Condition="Exists('..\packages\directxtk_desktop_2015.2018.4.23.1\build\native\directxtk_desktop_2015.targets')" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>このプロジェクトは、このコンピューター上にない NuGet パッケージを参照しています。それらのパッケージをダウンロードするには、[NuGet パッケージの復元] を使用します。詳細については、http://go.microsoft.com/fwlink/?LinkID=322105 を参照してください。見つからないファイルは {0} です。</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\directxtk_desktop_2015.2018.4.23.1\build\native\directxtk_desktop_2015.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk_desktop_2015.2018.4.23.1\build\native\directxtk_desktop_2015.targets'))" />
+  </Target>
+</Project>

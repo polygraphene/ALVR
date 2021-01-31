@@ -1,10 +1,10 @@
 #pragma once
 
-#include <WinSock2.h>
 #include <memory>
 #include <string>
 #include <vector>
 #include "Poller.h"
+#include "Utils.h"
 
 class ControlSocket {
 public:
@@ -23,10 +23,10 @@ public:
 private:
 	static const int CONTROL_PORT;
 	static const char *CONTROL_HOST;
-	std::shared_ptr<Poller> m_Poller;
+	std::shared_ptr<Poller> mPoller;
 
-	SOCKET m_Socket;
-	SOCKET m_ClientSocket;
+	SOCKET mSocket;
+	SOCKET mClientSocket;
 
-	std::string m_Buf;
+	std::string mBuf;
 };
