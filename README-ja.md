@@ -1,3 +1,6 @@
+> **このレポジトリでの開発は終了しました**  
+最新版はalvr-org origanizationによって開発されています。  
+こちらのレポジトリをご参照ください：[https://github.com/alvr-org/ALVR](https://github.com/alvr-org/ALVR)
 # ALVR - Air Light VR
 
 ALVRはPCVR(SteamVR)をリモートでプレイすることのできるオープンソースソフトウェアです。SteamVRのゲームをスタンドアロン型のヘッドセット(Gear VR/Oculus Go/Quest)でプレイすることができます。
