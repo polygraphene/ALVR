@@ -1,3 +1,6 @@
+> ** This repository is no longer maintained.**  
+Latest version is developed by alvr-org origanization. Check [https://github.com/alvr-org/ALVR](https://github.com/alvr-org/ALVR)
+
 # ALVR - Air Light VR
 
 ALVR is an open source remote VR display for Gear VR and Oculus Go/Quest. With it, you can play SteamVR games in your standalone headset.
